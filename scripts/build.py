@@ -288,7 +288,7 @@ def app_cfg(cfg):
 
 def site_cfg():
     s = clubcfg.sitio()
-    return {"autor": s.get("autor"), "anio": s.get("anio"), "contacto": s.get("contacto")}
+    return {"autor": s.get("autor"), "anio": s.get("anio"), "contacto": s.get("contacto"), "clubes": len(clubcfg.slugs())}
 
 
 def colores(cfg):
@@ -355,43 +355,77 @@ def write_app():
     (OUT / "manifest.webmanifest").write_text(json.dumps(manifest, ensure_ascii=False, indent=2))
 
 
+PORTADA_CSS = """
+    :root { --bg: #F4F7FA; --card: #fff; --tinta: #0E1B2A; --gris: #5E6E80; --linea: #DCE6F0; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #0A1520; --card: #0F1E2D; --tinta: #EAF2FA; --gris: #8A9BAD; --linea: #22374C; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 15px/1.5 Inter, system-ui, sans-serif; background: var(--bg); color: var(--tinta); }
+    header { background: #0E1B2A; color: #fff; padding: 40px 16px 34px; }
+    header .in, main, footer .in { max-width: 860px; margin: 0 auto; }
+    h1 { font: 800 clamp(30px, 6vw, 44px)/1.05 "Barlow Condensed", "Arial Narrow", sans-serif; letter-spacing: .3px; margin: 0 0 8px; }
+    header p { margin: 0; color: #B8C7D6; max-width: 620px; }
+    main { padding: 24px 16px 8px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+    .club { display: flex; gap: 14px; align-items: center; padding: 16px; background: var(--card); border: 1px solid var(--linea);
+            border-left: 6px solid var(--c); border-radius: 14px; color: inherit; text-decoration: none; transition: transform .1s, box-shadow .1s; }
+    .club:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(14, 27, 42, .1); }
+    .club img { width: 52px; height: auto; flex-shrink: 0; }
+    .club span { display: flex; flex-direction: column; min-width: 0; }
+    .club b { font: 700 20px/1.15 "Barlow Condensed", "Arial Narrow", sans-serif; }
+    .club small { color: var(--gris); }
+    footer { padding: 28px 16px 36px; font-size: 13px; color: var(--gris); }
+    footer a { color: inherit; }
+"""
+FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+         '<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">')
+
+
 def write_portada(cfgs):
-    """Portada (_site/index.html) con la lista de clubes."""
+    """Portada (_site/index.html) con la lista de clubes, y _site/404.html para direcciones que no existen."""
     sitio = clubcfg.sitio()
     e = lambda x: html.escape(str(x or ""), quote=True)  # noqa: E731
-    items = "\n".join(
-        f'      <a class="club" href="{e(c["slug"])}/"><img src="{e(c["slug"])}/assets/escudo.png" alt="" width="56" height="65">'
-        f'<span><b>{e(c["nombre"])}</b><small>{e(c.get("zona"))}</small></span></a>'
-        for c in cfgs if (SITE / c["slug"] / "index.html").exists())
-    (SITE / "index.html").write_text(f"""<!doctype html>
+    base = sitio.get("base") or "/"
+    cfgs = [c for c in cfgs if (SITE / c["slug"] / "index.html").exists()]
+    def lista(prefijo=""):
+        return "\n".join(
+            f'      <a class="club" href="{e(prefijo + c["slug"])}/" style="--c: {e((c.get("colores") or {}).get("principal") or "#74ACDF")}">'
+            f'<img src="{e(prefijo + c["slug"])}/assets/escudo.png" alt="">'
+            f'<span><b>{e(c["nombre"])}</b><small>{e(c.get("zona"))}</small></span></a>'
+            for c in sorted(cfgs, key=lambda c: c["nombre"].lower()))
+    pie = (f'Datos públicos de <a href="https://www.tenisdemesaparatodos.com/">TMT</a> y <a href="https://fetemba.bsweb.com.ar/">FETEMBA</a>: '
+           f'no nos pertenecen y este sitio no es oficial de esas organizaciones. Los escudos pertenecen a cada club.<br>'
+           f'© {e(sitio.get("anio"))} {e(sitio.get("autor"))}.')
+
+    def page(title, head, body):
+        return f"""<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{e(sitio.get("nombre"))}</title>
-  <meta name="description" content="Jugadores, ratings y estadísticas de clubes de tenis de mesa (TMT y FETEMBA).">
-  <style>
-    :root {{ --bg: #F6F9FC; --card: #fff; --tinta: #0E1B2A; --gris: #6B7A8C; --linea: #DCE6F0; }}
-    @media (prefers-color-scheme: dark) {{ :root {{ --bg: #0A1520; --card: #0F1E2D; --tinta: #EAF2FA; --gris: #8A9BAD; --linea: #22374C; }} }}
-    body {{ margin: 0; font: 15px/1.5 system-ui, sans-serif; background: var(--bg); color: var(--tinta); }}
-    main {{ max-width: 760px; margin: 0 auto; padding: 32px 16px; }}
-    h1 {{ font-size: 32px; margin: 0 0 6px; }} p {{ color: var(--gris); margin: 0 0 24px; }}
-    .club {{ display: flex; gap: 14px; align-items: center; padding: 14px 16px; margin: 10px 0; background: var(--card); border: 1px solid var(--linea); border-radius: 14px; color: inherit; text-decoration: none; }}
-    .club:hover {{ border-color: var(--gris); }}
-    .club span {{ display: flex; flex-direction: column; }} .club small {{ color: var(--gris); }}
-    footer {{ margin-top: 32px; font-size: 13px; color: var(--gris); }}
-  </style>
+  <title>{e(title)}</title>
+  <meta name="description" content="Plantel, ratings y estadísticas de clubes de tenis de mesa (TMT y FETEMBA).">
+  <meta name="theme-color" content="#0E1B2A">
+  {FONTS}
+  <style>{PORTADA_CSS}</style>
 </head>
 <body>
+  <header><div class="in">{head}</div></header>
   <main>
-    <h1>{e(sitio.get("nombre"))}</h1>
-    <p>Elegí tu club para ver el plantel, los ratings y las estadísticas de TMT y FETEMBA.</p>
-{items}
-    <footer>Datos públicos de TMT y FETEMBA; no nos pertenecen. © {e(sitio.get("anio"))} {e(sitio.get("autor"))}.</footer>
+{body}
   </main>
+  <footer><div class="in">{pie}</div></footer>
 </body>
 </html>
-""")
+"""
+    (SITE / "index.html").write_text(page(
+        sitio.get("nombre"),
+        f'<h1>{e(sitio.get("nombre"))}</h1><p>Plantel, ratings y estadísticas de cada club en el circuito TMT y en FETEMBA. Elegí tu club.</p>',
+        f'    <div class="grid">\n{lista()}\n    </div>'))
+    # GitHub Pages muestra 404.html en cualquier dirección que no existe: los links van con la dirección base del sitio
+    (SITE / "404.html").write_text(page(
+        "Página no encontrada · " + (sitio.get("nombre") or ""),
+        f'<h1>No encontramos esa página</h1><p>Puede que la dirección esté mal escrita. Estos son los clubes del sitio:</p>',
+        f'    <div class="grid">\n{lista(base)}\n    </div>'))
 
 
 def build_calendar(players):

@@ -5,6 +5,7 @@ los scripts y el sitio son iguales para todos.
 """
 import argparse
 import json
+import os
 import re
 from pathlib import Path
 
@@ -34,8 +35,14 @@ def sitio():
     return json.loads((ROOT / "config" / "sitio.json").read_text())
 
 
+def data_root():
+    """Carpeta con los datos descargados. En GitHub Actions es la rama 'datos' (variable CLUBES_DATA);
+    en una copia local, data/."""
+    return Path(os.environ.get("CLUBES_DATA") or ROOT / "data")
+
+
 def data_dir(slug):
-    d = ROOT / "data" / slug
+    d = data_root() / slug
     d.mkdir(parents=True, exist_ok=True)
     return d
 

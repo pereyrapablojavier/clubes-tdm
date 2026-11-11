@@ -894,6 +894,7 @@
   getJSON("data/club.json").then((c) => {
     CLUB = c;
     setContactLinks();
+    if (c.sitio && c.sitio.clubes > 1) document.getElementById("otrosClubes").hidden = false;
     const d = c.updated ? new Date(c.updated) : null;
     document.getElementById("updated").textContent = d ? `Última actualización: ${d.toLocaleDateString("es-AR")} ${d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}` : "";
     window.addEventListener("hashchange", route);

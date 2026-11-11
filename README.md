@@ -16,13 +16,27 @@ Cada club es una app instalable aparte (su escudo, sus colores, su nombre).
 |---|---|
 | `app/` | El sitio (HTML + CSS + JS, sin dependencias): igual para todos los clubes. `index.html` y `sw.js` son plantillas (`{{clave}}`). |
 | `clubes/<slug>/` | Lo propio de cada club: `club.json`, `escudo.png` e `icons/`. |
-| `config/sitio.json` | Datos del sitio: nombre, autor, año y contacto. |
-| `data/<slug>/` | Datos descargados de cada club (`tmt_raw.json`, `fet_raw.json`, `cal_raw.json`, `eq_raw.json`). |
+| `config/sitio.json` | Datos del sitio: nombre, autor, año, contacto y `base` (la dirección donde se publica, por ejemplo `/clubes-tdm/`; con dominio propio, `/`). |
+| `data/<slug>/` | Datos para probar en una copia local. En GitHub Actions se usan los de la rama `datos` (variable `CLUBES_DATA`). |
 | `scripts/scrape.py` | Descarga TMT, FETEMBA y el calendario de cada club. |
 | `scripts/equipos.py` | Descarga la Liga de Equipos y la Copa de Clubes (fetembaequipos.ar). |
-| `scripts/build.py` | Arma `_site/<slug>/` para cada club y la portada `_site/index.html`. |
+| `scripts/build.py` | Arma `_site/<slug>/` para cada club, la portada `_site/index.html` y `_site/404.html`. |
 
 La versión de los archivos (`?v=` y la caché de la app) se calcula sola a partir del contenido: no hay que subirla a mano.
+
+## Publicación y datos
+
+La Action [`Actualizar y publicar`](.github/workflows/publicar.yml) arma el sitio y lo publica en GitHub Pages:
+
+- **Automático, lunes y jueves 06:00 (Argentina):** baja los datos de todos los clubes, arma y publica.
+- **Manual** (pestaña **Actions → "Actualizar y publicar" → Run workflow**): elegís el club (vacío = todos) y qué bajar
+  (jugadores, calendario, Liga/Copa, Grand Slam y Super Series).
+- **Al mergear cambios en `main`:** solo arma y publica, sin bajar datos.
+
+Los datos descargados se guardan en la rama **`datos`** (una carpeta por club), no en `main`: así `main` tiene solo código.
+La primera vez, la rama se crea con los datos de `data/`.
+
+Para que publique, en el repo: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 
 ## Sumar un club
 

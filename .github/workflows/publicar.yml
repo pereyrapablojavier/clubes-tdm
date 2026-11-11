@@ -103,6 +103,22 @@ jobs:
             fi
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
+      - name: Clubes nuevos (sin datos todavía)
+        run: |
+          nuevos=""
+          for s in $(python scripts/clubcfg.py); do
+            [ -f "$CLUBES_DATA/$s/tmt_raw.json" ] || nuevos="$nuevos --club $s"
+          done
+          echo "NUEVOS=$nuevos" >> "$GITHUB_ENV"
+          [ -n "$nuevos" ] && echo "- Clubes nuevos: se bajan sus datos completos ($nuevos)" | tee -a "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Bajar los datos de los clubes nuevos
+        if: env.BAJAR != 'true' && env.NUEVOS != ''
+        continue-on-error: true
+        run: |
+          python scripts/scrape.py $NUEVOS
+          python scripts/equipos.py $NUEVOS
+
       - name: Bajar TMT y FETEMBA
         if: env.BAJAR == 'true' && env.PARTES != ''
         continue-on-error: true
@@ -114,7 +130,7 @@ jobs:
         run: python scripts/equipos.py $CLUB_ARG
 
       - name: Guardar los datos (rama datos)
-        if: env.BAJAR == 'true'
+        if: env.BAJAR == 'true' || env.NUEVOS != ''
         run: |
           cd "$CLUBES_DATA"
           git config user.name "github-actions[bot]"

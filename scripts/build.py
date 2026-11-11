@@ -234,7 +234,7 @@ def build():
         "updated": tmt.get("updated"), "fet_updated": fet.get("updated"),
         "nombre": CFG["nombre"], "sigla": CFG["tmt"].get("sigla"),
         "tmt_code": tmt["club"]["code"], "tmt_rank": tmt["club"].get("rank"), "fet_id": fet_club.get("id"),
-        "direccion": fd.get("direccion"), "localidad": fd.get("localidad"), "horarios": fd.get("horarios"),
+        "direccion": fd.get("direccion"), "localidad": fd.get("localidad"), "horarios": CFG.get("horarios") or fd.get("horarios"),
         "instalaciones": fd.get("instalaciones"), "como_llegar": fd.get("como_llegar"),
         "instagram": CFG.get("instagram"),
         "sedes": CFG.get("sedes") or [],

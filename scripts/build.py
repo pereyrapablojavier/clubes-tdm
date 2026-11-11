@@ -1,0 +1,582 @@
+"""Arma el sitio estático: un sitio por club en _site/<slug>/ y la portada con la lista de clubes en _site/.
+
+Cada club se arma con el código de app/ (igual para todos), su configuración (clubes/<slug>/club.json),
+su escudo e íconos (clubes/<slug>/) y sus datos descargados (data/<slug>/*_raw.json).
+
+Uso:  python scripts/build.py                  # todos los clubes
+      python scripts/build.py --club spin-tdm  # uno solo (la portada se arma igual)
+"""
+import argparse
+import hashlib
+import html
+import json
+import re
+import shutil
+import unicodedata
+from collections import defaultdict
+from datetime import datetime
+from pathlib import Path
+
+import clubcfg
+
+ROOT = Path(__file__).resolve().parent.parent
+APP = ROOT / "app"
+SITE = ROOT / "_site"
+# Del club que se está armando (los fija configure())
+CFG = None
+DATA = None             # data/<slug>/
+OUT = None              # _site/<slug>/
+SEDES = {}              # liga de TMT -> sede
+HEX_RE = re.compile(r"^#[0-9A-Fa-f]{6}$")
+
+
+def configure(cfg):
+    global CFG, DATA, OUT, SEDES
+    CFG = cfg
+    DATA = clubcfg.data_dir(cfg["slug"])
+    OUT = SITE / cfg["slug"]
+    SEDES = {int(k): v.get("sede") for k, v in (cfg["tmt"].get("ligas") or {}).items()}
+
+
+def read_json(path, default=None):
+    return json.loads(path.read_text()) if path.exists() else default
+
+CAT_ORDER = ["1ra", "2da", "3ra", "4ta", "5ta", "6ta", "7ma", "8va"]
+
+
+def norm(s):
+    s = unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode().lower()
+    return re.sub(r"[^a-z, ]", "", s).strip()
+
+
+def name_key(n):
+    """'Apellido, Nombre Segundo' -> ('apellido', 'nombre')"""
+    n = norm(n)
+    if "," in n:
+        sur, given = n.split(",", 1)
+    else:
+        sur, given = n, ""
+    return sur.strip(), (given.split() or [""])[0]
+
+
+def dmy(s):
+    try:
+        return datetime.strptime(s, "%d/%m/%Y").strftime("%Y-%m-%d")
+    except (TypeError, ValueError):
+        return None
+
+
+def pct(g, p):
+    return round(100 * g / p) if p else None
+
+
+def clean(s):
+    return (s or "").strip()
+
+
+def strip_club(n):
+    """'Etayo, Alejandro (FNX)' -> ('Etayo, Alejandro', 'FNX')"""
+    m = re.match(r"^(.*?)\s*\((\w+)\)\s*$", n or "")
+    return (m.group(1), m.group(2)) if m else (n, "")
+
+
+def fet_block(f):
+    if not f:
+        return None
+    years = defaultdict(lambda: {"p": 0, "g": 0, "t": 0, "pod": 0})
+    for a in f.get("anios") or []:
+        y = years[a["y"]]
+        for k in ("p", "g", "t", "pod"):
+            y[k] += a.get(k) or 0
+    v = f.get("vigente") or {}
+    return {"id": f["id"], "club": f.get("club"), "rating": f.get("rating"), "activo": f.get("activo"),
+            "pos": v.get("posicion"), "cat": v.get("categoria"), "ranking": v.get("ranking"),
+            "publicado": v.get("publicado"), "res": f.get("res"),
+            "years": [{"y": y, **years[y]} for y in sorted(years)],
+            "hist": f.get("rating_hist") or [], "pal": f.get("pal") or [], "clases": f.get("clases") or []}
+
+
+def build():
+    tmt = read_json(DATA / "tmt_raw.json")
+    if not tmt:
+        print(f"{CFG['slug']}: todavía no hay datos de TMT (correr scripts/scrape.py --club {CFG['slug']}); se omite.")
+        return False
+    fet = read_json(DATA / "fet_raw.json", {})
+    fet_club = fet.get("club") or {}
+    fet_roster = {str(j["id"]): j for j in fet_club.get("jugadores") or []}
+
+    players = {}
+    spin_codes = set()
+    for p in tmt["players"]:
+        spin_codes.add(p["code"])
+    # --- TMT players
+    for p in tmt["players"]:
+        code = p["code"]
+        tours = []
+        for t in p.get("t") or []:
+            ms = t.get("m") or []
+            pre = ms[0]["r"] if ms else None
+            matches = []
+            for m in ms:
+                opn, opclub = strip_club(m["op"])
+                matches.append({"ph": m["ph"], "op": opn, "oc": opclub, "opc": m["opc"], "sets": m["sets"],
+                                "w": m["w"], "res": m["res"], "or": m["or"], "v": m["v"],
+                                "spin": m["opc"] in spin_codes})
+            tours.append({"date": dmy(t["date"]), "name": t["name"], "tid": t["tid"], "var": t["var"],
+                          "pre": pre, "post": (pre + t["var"]) if pre is not None else None,
+                          "w": sum(1 for m in matches if m["w"]), "l": sum(1 for m in matches if not m["w"]),
+                          "m": matches})
+        tours.sort(key=lambda t: t["date"] or "", reverse=True)
+        all_m = [m for t in tours for m in t["m"]]
+        form = [("G" if m["w"] else "P") for t in tours for m in t["m"]][:10]
+        upsets = sorted([dict(m, date=t["date"], torneo=t["name"], diff=m["or"] - (t["pre"] or 0))
+                         for t in tours for m in t["m"] if m["w"]], key=lambda m: -m["diff"])[:5]
+        sets_w = sum(int(s.split("-")[0] or 0) > int(s.split("-")[1] or 0) for m in all_m for s in m["sets"] if "-" in s)
+        sets_l = sum(int(s.split("-")[0] or 0) < int(s.split("-")[1] or 0) for m in all_m for s in m["sets"] if "-" in s)
+        deciders = [m for m in all_m if len(m["sets"]) == 5]
+        players[code] = {
+            "id": code, "name": p["name"], "src": ["tmt"],
+            "tmt": {"code": code, "cat": p["cat"], "rating": p["rating"], "clubPos": p["pos"],
+                    "rankPos": int(p["rankPos"]) if (p.get("rankPos") or "").isdigit() else None,
+                    "var": p.get("var"), "tot": p.get("tot"), "y1": p.get("y1"), "m6": p.get("m6"),
+                    "ingreso": dmy((p.get("tot") or {}).get("ingreso")),
+                    "ultimo": dmy((p.get("tot") or {}).get("ultimo")),
+                    "tours": tours, "form": form, "upsets": upsets,
+                    "recent": {"w": sum(m["w"] for m in all_m), "l": sum(not m["w"] for m in all_m),
+                               "sets_w": sets_w, "sets_l": sets_l,
+                               "dec_w": sum(m["w"] for m in deciders), "dec_l": sum(not m["w"] for m in deciders),
+                               "delta": sum(t["var"] for t in tours)}},
+            "equipo": {"madera": clean(p.get("madera")), "drive": clean(p.get("drive")),
+                       "reves": clean(p.get("reves")), "mano": clean(p.get("mano"))},
+            "fet": fet_block((fet.get("byTmt") or {}).get(code)),
+        }
+    # --- FETEMBA-only players: link by name if possible
+    by_key = defaultdict(list)
+    for pl in players.values():
+        by_key[name_key(pl["name"])].append(pl)
+    for fid, f in (fet.get("fetOnly") or {}).items():
+        k = name_key(f["nombre"])
+        cand = [pl for pl in by_key.get(k, []) if not pl["fet"]]
+        fb = fet_block(f)
+        if len(cand) == 1:
+            cand[0]["fet"] = fb
+        else:
+            pid = "f" + str(fid)
+            players[pid] = {"id": pid, "name": f["nombre"], "src": ["fet"], "tmt": None,
+                            "equipo": None, "fet": fb}
+    for pl in players.values():
+        if pl["fet"]:
+            if "fet" not in pl["src"]:
+                pl["src"].append("fet")
+            pl["fet"]["spin"] = str(pl["fet"]["id"]) in fet_roster
+
+    # --- summary list
+    summary = []
+    for pl in players.values():
+        t, f = pl["tmt"], pl["fet"]
+        y1 = (t or {}).get("y1") or {}
+        tot = (t or {}).get("tot") or {}
+        summary.append({
+            "id": pl["id"], "name": pl["name"], "src": pl["src"],
+            "cat": t["cat"] if t else None, "rating": t["rating"] if t else None,
+            "rankPos": t["rankPos"] if t else None, "clubPos": t["clubPos"] if t else None,
+            "pj": tot.get("partidos"), "pg": tot.get("ganados"), "wr": pct(tot.get("ganados", 0), tot.get("partidos", 0)),
+            "pj12": y1.get("partidos"), "wr12": pct(y1.get("ganados", 0), y1.get("partidos", 0)),
+            "tor12": y1.get("torneos"), "torneos": tot.get("torneos"),
+            "pod": (tot.get("p1", 0) + tot.get("p2", 0) + tot.get("p3", 0)) if t else None,
+            "tit": tot.get("p1") if t else None,
+            "form": t["form"][:5] if t else [], "delta": t["recent"]["delta"] if t else None,
+            "ultimo": t["ultimo"] if t else None,
+            "fr": f["rating"] if f else None, "fpos": f["pos"] if f else None, "fcat": f["cat"] if f else None,
+            "fclub": f["club"] if f else None, "factivo": f["activo"] if f else None,
+            "spark": [x["post"] for x in reversed(t["tours"]) if x["post"]] if t else [],
+        })
+    summary.sort(key=lambda s: (s["rating"] is None, -(s["rating"] or 0), -(s["fr"] or 0)))
+
+    # --- club level aggregates
+    tmt_pl = [p for p in players.values() if p["tmt"]]
+    cats = {c: sum(1 for p in tmt_pl if p["tmt"]["cat"] == c) for c in CAT_ORDER}
+    ages = [p["age"] for p in tmt["players"] if p.get("age")]
+    # tournaments where club players played recently
+    tourn = {}
+    for p in tmt_pl:
+        for t in p["tmt"]["tours"]:
+            e = tourn.setdefault(t["tid"], {"tid": t["tid"], "date": t["date"], "name": t["name"],
+                                            "players": [], "w": 0, "l": 0})
+            e["players"].append({"id": p["id"], "name": p["name"], "w": t["w"], "l": t["l"], "var": t["var"]})
+            e["w"] += t["w"]
+            e["l"] += t["l"]
+    recent_t = sorted(tourn.values(), key=lambda t: t["date"] or "", reverse=True)[:30]
+    for t in recent_t:
+        t["players"].sort(key=lambda x: (-x["w"], x["l"]))
+    # top lists
+    ups = []
+    for p in tmt_pl:
+        for u in p["tmt"]["upsets"][:2]:
+            ups.append({"id": p["id"], "name": p["name"], **{k: u[k] for k in ("op", "oc", "or", "res", "date", "torneo", "diff")}})
+    ups.sort(key=lambda u: -u["diff"])
+    # internal club derby matches
+    derbies = {}
+    for p in tmt_pl:
+        for t in p["tmt"]["tours"]:
+            for m in t["m"]:
+                if m["spin"] and m["w"]:
+                    key = (t["tid"], p["id"], m["opc"], m["res"], tuple(m["sets"]))
+                    derbies[key] = {"date": t["date"], "torneo": t["name"], "winner": p["name"], "wid": p["id"],
+                                    "loser": m["op"], "lid": m["opc"], "res": m["res"]}
+    derby_list = sorted(derbies.values(), key=lambda d: d["date"] or "", reverse=True)[:40]
+    total_recent = {"w": sum(p["tmt"]["recent"]["w"] for p in tmt_pl), "l": sum(p["tmt"]["recent"]["l"] for p in tmt_pl)}
+    tot_all = {k: sum(((p["tmt"]["tot"] or {}).get(k) or 0) for p in tmt_pl) for k in ("partidos", "ganados", "torneos", "p1", "p2", "p3")}
+    y1_all = {k: sum(((p["tmt"]["y1"] or {}).get(k) or 0) for p in tmt_pl) for k in ("partidos", "ganados", "torneos", "p1", "p2", "p3")}
+
+    fd = fet_club.get("datos") or {}
+    club = {
+        "updated": tmt.get("updated"), "fet_updated": fet.get("updated"),
+        "nombre": CFG["nombre"], "sigla": CFG["tmt"].get("sigla"),
+        "tmt_code": tmt["club"]["code"], "tmt_rank": tmt["club"].get("rank"), "fet_id": fet_club.get("id"),
+        "direccion": fd.get("direccion"), "localidad": fd.get("localidad"), "horarios": fd.get("horarios"),
+        "instalaciones": fd.get("instalaciones"), "como_llegar": fd.get("como_llegar"),
+        "instagram": CFG.get("instagram"),
+        "sedes": CFG.get("sedes") or [],
+        "entrenadores": CFG.get("entrenadores") or [],
+        "cfg": app_cfg(CFG), "sitio": site_cfg(),
+        "stats": {
+            "tmt_players": len(tmt_pl), "fet_players": len(fet_roster),
+            "total_players": len(players),
+            "avg_age": round(sum(ages) / len(ages)) if ages else None,
+            "tmt_rating_total": sum(p["tmt"]["rating"] for p in tmt_pl),
+            "tmt_rating_avg": round(sum(p["tmt"]["rating"] for p in tmt_pl) / len(tmt_pl)) if tmt_pl else None,
+            "cats": cats, "tot": tot_all, "y1": y1_all, "recent": total_recent,
+            "fet_ranked": sum(1 for j in fet_roster.values() if j.get("posicion")),
+            "fet_cats": dict(sorted(_count(j.get("categoria") for j in fet_roster.values()).items())),
+        },
+        "tournaments": recent_t, "upsets": ups[:12], "derbies": derby_list,
+        "players": summary,
+    }
+
+    calendar = build_calendar(players)
+    equipos = build_equipos(players)
+    circuito = build_circuito(players, fet)
+
+    # --- write
+    if OUT.exists():
+        shutil.rmtree(OUT)
+    (OUT / "data").mkdir(parents=True)
+    write_app()
+    (OUT / "data" / "club.json").write_text(json.dumps(club, ensure_ascii=False, separators=(",", ":")))
+    if calendar:
+        (OUT / "data" / "calendar.json").write_text(json.dumps(calendar, ensure_ascii=False, separators=(",", ":")))
+    if equipos:
+        (OUT / "data" / "equipos.json").write_text(json.dumps(equipos, ensure_ascii=False, separators=(",", ":")))
+    if circuito:
+        (OUT / "data" / "circuito.json").write_text(json.dumps(circuito, ensure_ascii=False, separators=(",", ":")))
+    (OUT / "data" / "players.json").write_text(json.dumps(players, ensure_ascii=False, separators=(",", ":")))
+    print(f"{CFG['slug']}: sitio generado en {OUT.relative_to(ROOT)} — {len(players)} jugadores")
+    return True
+
+
+# ------------------------------------------------------------------ configuración que usa el sitio
+APP_KEYS = ("slug", "nombre", "corto", "subtitulo", "app_corto", "zona", "intro", "instagram", "instagram_usuario",
+            "horarios_titulo", "favoritos_clave_vieja")
+
+
+def app_cfg(cfg):
+    out = {k: cfg.get(k) for k in APP_KEYS if cfg.get(k) is not None}
+    out["equipos"] = cfg["fetemba"].get("equipos")
+    return out
+
+
+def site_cfg():
+    s = clubcfg.sitio()
+    return {"autor": s.get("autor"), "anio": s.get("anio"), "contacto": s.get("contacto")}
+
+
+def colores(cfg):
+    c = cfg.get("colores") or {}
+    keys = {"principal": "--c-principal", "principal_2": "--c-principal-2", "principal_3": "--c-principal-3",
+            "principal_medio": "--c-principal-medio",
+            "acento": "--c-acento", "oscuro": "--c-oscuro"}
+    for k, v in c.items():
+        if k in keys and not HEX_RE.match(v or ""):
+            raise SystemExit(f"{cfg['slug']}: el color {k} debe ser #RRGGBB (es {v!r})")
+    return "; ".join(f"{keys[k]}: {v}" for k, v in c.items() if k in keys)
+
+
+def render(template, values):
+    """Reemplaza {{clave}} por su valor (escapado para HTML)."""
+    def sub(m):
+        if m.group(1) not in values:
+            raise SystemExit(f"Falta el valor de {{{{{m.group(1)}}}}} en la plantilla")
+        return html.escape(str(values[m.group(1)]), quote=True)
+    return re.sub(r"\{\{(\w+)\}\}", sub, template)
+
+
+def club_files(cfg):
+    """Escudo e íconos del club: clubes/<slug>/escudo.png y clubes/<slug>/icons/*.png."""
+    d = clubcfg.CLUBES / cfg["slug"]
+    return [d / "escudo.png"] + sorted((d / "icons").glob("*.png"))
+
+
+def write_app():
+    """Copia el sitio (app/) con los datos del club: textos y colores en index.html, manifest, service worker,
+    escudo e íconos. La versión (?v=) sale del contenido: cambia sola cuando cambia algo."""
+    cfg = CFG
+    srcs = [APP / "index.html", APP / "sw.js", APP / "assets" / "app.js", APP / "assets" / "styles.css",
+            clubcfg.CLUBES / cfg["slug"] / "club.json", ROOT / "config" / "sitio.json"] + club_files(cfg)
+    h = hashlib.sha1()
+    for f in srcs:
+        h.update(f.read_bytes())
+    version = h.hexdigest()[:10]
+    sitio = clubcfg.sitio()
+    c = cfg.get("colores") or {}
+    values = {"slug": cfg["slug"], "version": version, "nombre": cfg["nombre"], "corto": cfg.get("corto") or cfg["nombre"],
+              "subtitulo": cfg.get("subtitulo") or "", "app_corto": cfg.get("app_corto") or cfg.get("corto") or cfg["nombre"],
+              "zona": cfg.get("zona") or "", "color_oscuro": c.get("oscuro") or "#0E1B2A", "colores_css": colores(cfg),
+              "instagram": cfg.get("instagram") or "#/club", "instagram_usuario": cfg.get("instagram_usuario") or "Instagram",
+              "anio": sitio.get("anio"), "autor": sitio.get("autor")}
+    shutil.copytree(APP / "assets", OUT / "assets")
+    shutil.copy(club_files(cfg)[0], OUT / "assets" / "escudo.png")
+    (OUT / "assets" / "icons").mkdir(exist_ok=True)
+    for f in club_files(cfg)[1:]:
+        shutil.copy(f, OUT / "assets" / "icons" / f.name)
+    (OUT / "index.html").write_text(render((APP / "index.html").read_text(), values))
+    (OUT / "sw.js").write_text(render((APP / "sw.js").read_text(), values))
+    manifest = {
+        "name": cfg["nombre"], "short_name": values["app_corto"],
+        "description": f"Jugadores, ratings y estadísticas de {cfg['nombre']} (TMT y FETEMBA).",
+        "lang": "es-AR", "id": "./", "start_url": "./", "scope": "./", "display": "standalone", "orientation": "portrait",
+        "background_color": values["color_oscuro"], "theme_color": values["color_oscuro"], "categories": ["sports"],
+        "icons": [{"src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+                  {"src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+                  {"src": "assets/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}],
+        "shortcuts": [{"name": "Jugadores", "url": "./#/jugadores", "icons": [{"src": "assets/icons/icon-192.png", "sizes": "192x192"}]},
+                      {"name": "Torneos", "url": "./#/torneos", "icons": [{"src": "assets/icons/icon-192.png", "sizes": "192x192"}]}],
+    }
+    (OUT / "manifest.webmanifest").write_text(json.dumps(manifest, ensure_ascii=False, indent=2))
+
+
+def write_portada(cfgs):
+    """Portada (_site/index.html) con la lista de clubes."""
+    sitio = clubcfg.sitio()
+    e = lambda x: html.escape(str(x or ""), quote=True)  # noqa: E731
+    items = "\n".join(
+        f'      <a class="club" href="{e(c["slug"])}/"><img src="{e(c["slug"])}/assets/escudo.png" alt="" width="56" height="65">'
+        f'<span><b>{e(c["nombre"])}</b><small>{e(c.get("zona"))}</small></span></a>'
+        for c in cfgs if (SITE / c["slug"] / "index.html").exists())
+    (SITE / "index.html").write_text(f"""<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{e(sitio.get("nombre"))}</title>
+  <meta name="description" content="Jugadores, ratings y estadísticas de clubes de tenis de mesa (TMT y FETEMBA).">
+  <style>
+    :root {{ --bg: #F6F9FC; --card: #fff; --tinta: #0E1B2A; --gris: #6B7A8C; --linea: #DCE6F0; }}
+    @media (prefers-color-scheme: dark) {{ :root {{ --bg: #0A1520; --card: #0F1E2D; --tinta: #EAF2FA; --gris: #8A9BAD; --linea: #22374C; }} }}
+    body {{ margin: 0; font: 15px/1.5 system-ui, sans-serif; background: var(--bg); color: var(--tinta); }}
+    main {{ max-width: 760px; margin: 0 auto; padding: 32px 16px; }}
+    h1 {{ font-size: 32px; margin: 0 0 6px; }} p {{ color: var(--gris); margin: 0 0 24px; }}
+    .club {{ display: flex; gap: 14px; align-items: center; padding: 14px 16px; margin: 10px 0; background: var(--card); border: 1px solid var(--linea); border-radius: 14px; color: inherit; text-decoration: none; }}
+    .club:hover {{ border-color: var(--gris); }}
+    .club span {{ display: flex; flex-direction: column; }} .club small {{ color: var(--gris); }}
+    footer {{ margin-top: 32px; font-size: 13px; color: var(--gris); }}
+  </style>
+</head>
+<body>
+  <main>
+    <h1>{e(sitio.get("nombre"))}</h1>
+    <p>Elegí tu club para ver el plantel, los ratings y las estadísticas de TMT y FETEMBA.</p>
+{items}
+    <footer>Datos públicos de TMT y FETEMBA; no nos pertenecen. © {e(sitio.get("anio"))} {e(sitio.get("autor"))}.</footer>
+  </main>
+</body>
+</html>
+""")
+
+
+def build_calendar(players):
+    """Torneos organizados por el club: próximos (con horarios) y jugados (con podio 1° a 4°)."""
+    path = DATA / "cal_raw.json"
+    if not path.exists():
+        return None
+    raw = json.loads(path.read_text())
+    tmt_ids = {p["id"] for p in players.values() if p.get("tmt")}
+
+    def person(x):
+        name, club = strip_club(x.get("n", ""))
+        return {"n": name, "club": club, "c": x.get("c"), "spin": (club == CFG["tmt"].get("sigla")) or x.get("c") in tmt_ids,
+                "site": x.get("c") in tmt_ids, "pos": x["pos"], "semi": bool(x.get("semi"))}
+
+    past = []
+    medal = defaultdict(lambda: {"p1": 0, "p2": 0, "p3": 0, "name": ""})
+    for t in raw.get("past", []):
+        divs = []
+        for d in t.get("divs") or []:
+            pod = [person(x) for x in d["podio"]]
+            for x in pod:
+                if x["site"]:
+                    m = medal[x["c"]]
+                    m["name"] = x["n"]
+                    m["p%d" % min(x["pos"], 3)] += 1
+            divs.append({"div": d["div"].replace("División", "Div.").strip(), "res": d.get("res"),
+                         "partidos": d.get("partidos"), "podio": pod})
+        past.append({"code": t["code"], "name": t["name"], "date": t.get("date"), "loc": t.get("loc"),
+                     "liga": t.get("liga"), "sede": SEDES.get(t.get("liga"), t.get("loc")), "divs": divs})
+    upcoming = [{"code": u["code"], "name": u["name"], "date": u.get("date"), "loc": u.get("loc"),
+                 "liga": u.get("liga"), "sede": SEDES.get(u.get("liga"), u.get("loc")), "lugar": u.get("sede"),
+                 "dir": u.get("dir"), "divs": u.get("divs") or [], "precio": u.get("precio") or []}
+                for u in raw.get("upcoming", [])]
+    ranking = sorted(({"id": k, **v, "total": v["p1"] + v["p2"] + v["p3"]} for k, v in medal.items()),
+                     key=lambda r: (-r["p1"], -r["p2"], -r["p3"]))[:15]
+    return {"updated": raw.get("updated"), "ligas": raw.get("ligas"), "upcoming": upcoming, "past": past,
+            "ranking": ranking}
+
+
+CAMPEONATOS = {5: "Liga de Equipos · 2° semestre", 3: "Liga de Equipos · 1° semestre", 4: "Copa de Clubes"}
+
+
+def build_circuito(players, fet):
+    """Grand Slam y Super Series (FETEMBA): cada torneo con los jugadores del plantel que lo jugaron."""
+    by_fet = {str(p["fet"]["id"]): p["id"] for p in players.values() if p.get("fet")}
+    recs = list((fet.get("byTmt") or {}).values()) + list((fet.get("fetOnly") or {}).values())
+    if not any("circ" in r for r in recs):
+        return None
+    ev = {}
+    for r in recs:
+        fid = str(r["id"])
+        for x in r.get("circ") or []:
+            e = ev.setdefault(x["e"], {"id": x["e"], "ev": x["ev"], "f": x["f"], "tipo": x["tipo"], "part": []})
+            e["f"] = min(e["f"], x["f"])
+            e["part"].append({"fid": fid, "id": by_fet.get(fid), "name": r.get("nombre"), "club": r.get("club"),
+                              "cats": x["cats"], "g": x["g"], "p": x["p"], "pu": x["pu"], "ll": x["ll"]})
+    for e in ev.values():
+        e["part"].sort(key=lambda q: (q["ll"] != "A", q["pu"] or 999, -q["g"], q["name"] or ""))
+    return {"updated": fet.get("updated"), "eventos": sorted(ev.values(), key=lambda e: (e["f"], e["id"]), reverse=True)}
+
+
+def is_spin_team(name):
+    """True si el equipo es del club que se está armando (club.json -> fetemba.equipos)."""
+    pat = CFG["fetemba"].get("equipos")
+    return bool(pat and re.match(pat, (name or "").strip(), re.I))
+
+
+def build_equipos(players):
+    """Liga de Equipos y Copa de Clubes (fetembaequipos.ar): equipos del club, tablas, cruces y jugadores."""
+    path = DATA / "eq_raw.json"
+    if not path.exists():
+        return None
+    raw = json.loads(path.read_text())
+    sets = raw.get("sets") or {}
+    by_fet = {str(p["fet"]["id"]): p["id"] for p in players.values() if p.get("fet")}
+    pstats = defaultdict(lambda: {"name": "", "s_w": 0, "s_l": 0, "d_w": 0, "d_l": 0, "enc": set(), "teams": set()})
+
+    def enc_out(e, comp, team_hint=None):
+        spin_local = is_spin_team(e.get("local"))
+        spin_name = e["local"] if spin_local else e["visit"]
+        st = sets.get(str(e["id"])) or {}
+        played = (e.get("rl") or 0) + (e.get("rv") or 0) > 0
+        parts = []
+        for p in e.get("partidos") or []:
+            r = st.get(str(p["n"])) or {}
+            g = r.get("g")
+            spin_won = None
+            if g:
+                spin_won = (g == e["local"]) if spin_local else (g == e["visit"])
+                if g not in (e["local"], e["visit"]):
+                    spin_won = is_spin_team(g)
+            mine = [x for x in ((p.get("l1"), p.get("l2")) if spin_local else (p.get("v1"), p.get("v2"))) if x]
+            rival = [x for x in ((p.get("v1"), p.get("v2")) if spin_local else (p.get("l1"), p.get("l2"))) if x]
+            sets_list = r.get("sets") or []
+            if not spin_local:  # mostrar los sets desde el lado del club
+                sets_list = ["-".join(reversed(x.split("-"))) for x in sets_list]
+            if spin_won is not None:
+                for pid, pname in mine:
+                    s = pstats[str(pid)]
+                    s["name"] = pname
+                    key = ("s_" if p.get("t") == "S" else "d_") + ("w" if spin_won else "l")
+                    s[key] += 1
+                    s["enc"].add(e["id"])
+                    s["teams"].add(comp)
+            parts.append({"n": p["n"], "t": p.get("t"), "spin": [[str(i), n, by_fet.get(str(i))] for i, n in mine],
+                          "rival": [[str(i), n] for i, n in rival], "sets": sets_list, "w": spin_won})
+        gf, gc = (e.get("rl"), e.get("rv")) if spin_local else (e.get("rv"), e.get("rl"))
+        return {"id": e["id"], "fecha": e.get("fecha"), "hora": (e.get("hora") or "")[:5], "sede": e.get("sede"),
+                "mesa": e.get("mesa"), "fecha_n": e.get("desc_fecha"), "spin": spin_name,
+                "rival": e["visit"] if spin_local else e["local"], "local": spin_local, "gf": gf, "gc": gc,
+                "played": played, "res": ("G" if gf > gc else "P") if played else None, "partidos": parts}
+
+    comps = []
+    for z in raw.get("zones") or []:
+        comp = CAMPEONATOS.get(z.get("camp"), "Competencia")
+        titulo = z.get("titulo") or ""
+        cat = titulo.split(" / ")[0].title() if z.get("tipo") == "liga" else titulo.split(" / ")[0].title()
+        fase = titulo.split(" / ")[1].title() if " / " in titulo else ""
+        encs = sorted([enc_out(e, comp) for e in z.get("encuentros") or []
+                       if is_spin_team(e.get("local")) or is_spin_team(e.get("visit"))], key=lambda x: (x["fecha"] or "9999", x["hora"]))
+        for team in sorted({r["club"] for r in z.get("tabla") or [] if is_spin_team(r["club"])}):
+            row = next(r for r in z["tabla"] if r["club"] == team)
+            comps.append({"tipo": z.get("tipo"), "camp": z.get("camp"), "comp": comp, "cat": cat, "fase": fase,
+                          "zona": (z.get("zona") or "").title(), "team": team, "pos": row.get("pos"),
+                          "n": len(z["tabla"]), "pts": row.get("pts"), "pj": row.get("pj"), "pg": row.get("pg"),
+                          "pp": row.get("pp"), "tabla": z["tabla"],
+                          "encuentros": [x for x in encs if x["spin"] == team]})
+    for e in raw.get("playoff") or []:
+        comp = CAMPEONATOS.get(e.get("camp"), "Competencia")
+        titulo = e.get("titulo") or ""
+        x = enc_out(e, comp)
+        comps.append({"tipo": e.get("tipo"), "camp": e.get("camp"), "comp": comp, "cat": titulo.split(" / ")[0].title(),
+                      "fase": (titulo.split(" / ")[1].title() if " / " in titulo else "Play Off"), "zona": e.get("desc_fecha") or "",
+                      "team": x["spin"], "pos": None, "n": None, "pts": None, "pj": 1, "pg": 1 if x["res"] == "G" else 0,
+                      "pp": 1 if x["res"] == "P" else 0, "tabla": [], "encuentros": [x]})
+    order = {5: 0, 4: 1, 3: 2}
+    cat_order = ["Division De Honor", "División De Honor", "Primera", "Segunda", "Tercera", "Cuarta", "Quinta", "Sexta", "Septima", "Séptima", "Octava"]
+    def ck(c):
+        for i, k in enumerate(cat_order):
+            if c["cat"].startswith(k):
+                return i
+        return 99
+    fixw = lambda t: re.sub(r"\bDivision\b", "División", re.sub(r"\bSeptima\b", "Séptima", t or ""))  # noqa
+    for c in comps:
+        c["cat"], c["fase"] = fixw(c["cat"]), fixw(c["fase"])
+        if c["tipo"] == "copa":
+            c["fase"] = ""
+    comps.sort(key=lambda c: (order.get(c["camp"], 9), ck(c), c["fase"], c["team"]))
+    upcoming = []
+    for u in raw.get("upcoming") or []:
+        sl = is_spin_team(u.get("club_local"))
+        upcoming.append({"tipo": u.get("tipo"), "comp": u.get("nom_campeonato") or "Copa de Clubes", "cat": re.sub(r"\bDivision\b", "División", (u.get("nom_categoria") or "").title()),
+                         "zona": (u.get("nom_zona") or u.get("nombre_zona") or "").title(), "fecha_n": u.get("desc_fecha"),
+                         "fecha": u.get("fecha"), "hora": (u.get("hora") or "")[:5], "sede": u.get("sede"), "mesa": u.get("mesa"),
+                         "spin": u["club_local"] if sl else u["club_visitante"], "rival": u["club_visitante"] if sl else u["club_local"], "local": sl})
+    upcoming.sort(key=lambda u: (u["fecha"] or "", u["hora"]))
+    jug = []
+    for fid, s in pstats.items():
+        tot_w, tot_l = s["s_w"] + s["d_w"], s["s_l"] + s["d_l"]
+        jug.append({"fid": fid, "id": by_fet.get(fid), "name": s["name"], "s_w": s["s_w"], "s_l": s["s_l"], "d_w": s["d_w"],
+                    "d_l": s["d_l"], "w": tot_w, "l": tot_l, "pct": pct(tot_w, tot_w + tot_l), "enc": len(s["enc"])})
+    jug.sort(key=lambda j: (-(j["w"] + j["l"]), -j["w"]))
+    return {"updated": raw.get("updated"), "competencias": comps, "proximos": upcoming, "jugadores": jug}
+
+
+def _count(it):
+    d = defaultdict(int)
+    for x in it:
+        if x:
+            d[x] += 1
+    return d
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Arma el sitio de cada club en _site/<slug>/.")
+    clubcfg.add_club_arg(ap)
+    args = ap.parse_args()
+    SITE.mkdir(exist_ok=True)
+    (SITE / ".nojekyll").write_text("")
+    for cfg in clubcfg.selected(args):
+        configure(cfg)
+        build()
+    write_portada([clubcfg.load(s) for s in clubcfg.slugs()])
+
+
+if __name__ == "__main__":
+    main()

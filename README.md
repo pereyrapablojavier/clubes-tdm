@@ -1,3 +1,65 @@
 # Clubes de Tenis de Mesa
 
-Sitio con el plantel y las estadísticas de clubes de tenis de mesa (TMT y FETEMBA). El código llega en el primer PR.
+Sitio con el plantel y las estadísticas de **clubes de tenis de mesa**, tomadas de fuentes públicas:
+
+- **TMT – Tenis de Mesa para Todos**: rating, ranking, categoría, torneos, partidos y podios.
+- **FETEMBA**: rating y ranking federado, historial, palmarés, Grand Slam y Super Series.
+- **FETEMBA Equipos**: Liga de Equipos y Copa de Clubes.
+
+Un mismo código sirve para todos los clubes: cada club tiene su carpeta con su configuración, y el sitio
+se publica en `/<club>/` (por ejemplo `/spin-tdm/`). La raíz muestra la lista de clubes.
+Cada club es una app instalable aparte (su escudo, sus colores, su nombre).
+
+## Estructura
+
+| Carpeta | Qué hay |
+|---|---|
+| `app/` | El sitio (HTML + CSS + JS, sin dependencias): igual para todos los clubes. `index.html` y `sw.js` son plantillas (`{{clave}}`). |
+| `clubes/<slug>/` | Lo propio de cada club: `club.json`, `escudo.png` e `icons/`. |
+| `config/sitio.json` | Datos del sitio: nombre, autor, año y contacto. |
+| `data/<slug>/` | Datos descargados de cada club (`tmt_raw.json`, `fet_raw.json`, `cal_raw.json`, `eq_raw.json`). |
+| `scripts/scrape.py` | Descarga TMT, FETEMBA y el calendario de cada club. |
+| `scripts/equipos.py` | Descarga la Liga de Equipos y la Copa de Clubes (fetembaequipos.ar). |
+| `scripts/build.py` | Arma `_site/<slug>/` para cada club y la portada `_site/index.html`. |
+
+La versión de los archivos (`?v=` y la caché de la app) se calcula sola a partir del contenido: no hay que subirla a mano.
+
+## Sumar un club
+
+1. Crear `clubes/<slug>/club.json` (el `slug` es la dirección: minúsculas, números y guiones). Tomar como modelo
+   [`clubes/spin-tdm/club.json`](clubes/spin-tdm/club.json):
+
+   | Campo | Qué es |
+   |---|---|
+   | `nombre`, `corto`, `subtitulo`, `app_corto` | Nombre completo, nombre corto (barra de arriba), subtítulo y nombre de la app en el celular. |
+   | `zona`, `intro` | Barrios/ciudad y texto de presentación ("Dónde estamos"). |
+   | `instagram`, `instagram_usuario` | Link y usuario de Instagram del club. |
+   | `colores` | `principal`, `principal_2` (claro), `principal_3` (muy claro), `acento` (oscuro para links), `oscuro` (barra y pie), y opcional `principal_medio`. Todos `#RRGGBB`. |
+   | `tmt.club`, `tmt.sigla` | Código del club en TMT (`clubes_ampliar.asp?codigo=…`) y su sigla en los cuadros (por ejemplo `SPI`). |
+   | `tmt.ligas` | Ligas de TMT que organiza el club (`torneos.asp?filtroLiga=…`) con la sede de cada una. Vacío si no organiza torneos. |
+   | `fetemba.club` | Id del club en FETEMBA (`/api/publico/clubes/…`). |
+   | `fetemba.equipos` | Expresión con la que empiezan los nombres de sus equipos en fetembaequipos.ar (por ejemplo `^spin tdm`). |
+   | `sedes`, `horarios_titulo`, `entrenadores` | Sedes (nombre, dirección, lugar, días), título de la tarjeta de horarios y entrenadores. |
+
+2. Poner el escudo en `clubes/<slug>/escudo.png` y los íconos de la app en `clubes/<slug>/icons/`
+   (`icon-192.png`, `icon-512.png`, `maskable-512.png`, `apple-touch-icon.png`, `favicon-32.png`).
+3. Bajar los datos y armar el sitio:
+
+```bash
+pip install -r requirements.txt
+python scripts/scrape.py --club <slug>
+python scripts/equipos.py --club <slug>
+python scripts/build.py
+python -m http.server -d _site 8000   # y abrir http://localhost:8000/<slug>/
+```
+
+Sin `--club`, los scripts procesan todos los clubes. `scrape.py` también acepta partes sueltas:
+`calendario`, `jugadores` o `circuito` (Grand Slam y Super Series; solo vuelve a bajar todo si hay novedades).
+
+## Aviso
+
+La información que muestra el sitio es **pública** y se consulta a [TMT](https://www.tenisdemesaparatodos.com/),
+[FETEMBA](https://fetemba.bsweb.com.ar/) y [FETEMBA Equipos](https://fetembaequipos.ar/). Los datos **no nos pertenecen**:
+son propiedad de sus respectivas fuentes. El sitio no es oficial de TMT ni de FETEMBA. Los escudos pertenecen a cada club.
+
+© 2026 Pablo Javier Pereyra — diseño y desarrollo del sitio.

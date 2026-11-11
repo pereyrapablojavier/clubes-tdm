@@ -1,0 +1,141 @@
+name: Actualizar y publicar
+
+# - Automático (lunes y jueves): baja los datos de todos los clubes, arma el sitio y lo publica.
+# - Manual (Actions → "Actualizar y publicar" → Run workflow): elegís qué bajar y de qué club.
+# - Al mergear cambios en main: solo arma y publica (no baja datos).
+# Los datos descargados se guardan en la rama "datos" (no en main): así main tiene solo código.
+
+on:
+  workflow_dispatch:
+    inputs:
+      club:
+        description: "Club (slug, por ejemplo spin-tdm). Vacío = todos"
+        type: string
+        default: ""
+      jugadores:
+        description: "Jugadores (TMT + FETEMBA: ratings, rankings, fichas)"
+        type: boolean
+        default: true
+      calendario:
+        description: "Calendario de torneos del club (TMT)"
+        type: boolean
+        default: true
+      equipos:
+        description: "Liga de Equipos y Copa de Clubes (fetembaequipos.ar)"
+        type: boolean
+        default: true
+      circuito:
+        description: "Grand Slam y Super Series (FETEMBA; solo baja si hay novedades)"
+        type: boolean
+        default: true
+  schedule:
+    # Lunes y jueves 09:00 UTC = 06:00 en Argentina (GitHub puede demorarlo unos minutos)
+    - cron: "0 9 * * 1,4"
+  push:
+    branches: [main]
+    paths: ["app/**", "clubes/**", "config/**", "scripts/**", ".github/workflows/publicar.yml"]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: publicar
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    env:
+      CLUBES_DATA: ${{ github.workspace }}/.datos
+      BAJAR: ${{ github.event_name != 'push' }}
+      # En la corrida automática no hay inputs: se baja todo
+      JUGADORES: ${{ github.event_name == 'schedule' || inputs.jugadores }}
+      CALENDARIO: ${{ github.event_name == 'schedule' || inputs.calendario }}
+      EQUIPOS: ${{ github.event_name == 'schedule' || inputs.equipos }}
+      CIRCUITO: ${{ github.event_name == 'schedule' || inputs.circuito }}
+      CLUB: ${{ inputs.club }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+
+      - name: Traer los datos guardados (rama datos)
+        run: |
+          if git ls-remote --exit-code --heads origin datos >/dev/null; then
+            git fetch --depth 1 origin datos
+            git worktree add "$CLUBES_DATA" FETCH_HEAD
+            git -C "$CLUBES_DATA" switch -c datos
+          else
+            echo "La rama datos todavía no existe: se arranca con los datos de data/ en main."
+            mkdir -p "$CLUBES_DATA"
+            cp -r data/. "$CLUBES_DATA"/ 2>/dev/null || true
+            git -C "$CLUBES_DATA" init -q -b datos
+            git -C "$CLUBES_DATA" remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          fi
+
+      - name: Qué se actualiza
+        run: |
+          club_arg=""
+          if [ -n "$CLUB" ]; then
+            if ! printf '%s' "$CLUB" | grep -Eq '^[a-z0-9][a-z0-9-]*$'; then echo "::error::Club inválido: $CLUB"; exit 1; fi
+            club_arg="--club $CLUB"
+          fi
+          partes=""
+          [ "$CALENDARIO" = true ] && partes="$partes calendario"
+          [ "$JUGADORES" = true ] && partes="$partes jugadores"
+          [ "$CIRCUITO" = true ] && partes="$partes circuito"
+          echo "CLUB_ARG=$club_arg" >> "$GITHUB_ENV"
+          echo "PARTES=$partes" >> "$GITHUB_ENV"
+          {
+            echo "### Actualizar y publicar ($GITHUB_EVENT_NAME)"
+            if [ "$BAJAR" = true ]; then
+              echo "- Clubes: ${CLUB:-todos}"
+              echo "- TMT / FETEMBA:${partes:- (nada)}"
+              echo "- Liga y Copa: $([ "$EQUIPOS" = true ] && echo sí || echo no)"
+            else
+              echo "- Cambio en main: solo se arma y publica el sitio (no se bajan datos)."
+            fi
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Bajar TMT y FETEMBA
+        if: env.BAJAR == 'true' && env.PARTES != ''
+        continue-on-error: true
+        run: python scripts/scrape.py $PARTES $CLUB_ARG
+
+      - name: Bajar Liga de Equipos y Copa de Clubes
+        if: env.BAJAR == 'true' && env.EQUIPOS == 'true'
+        continue-on-error: true
+        run: python scripts/equipos.py $CLUB_ARG
+
+      - name: Guardar los datos (rama datos)
+        if: env.BAJAR == 'true'
+        run: |
+          cd "$CLUBES_DATA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Datos sin cambios" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            git commit -q -m "Datos: ${CLUB:-todos los clubes} ($(date -u +%Y-%m-%d))"
+            git push -q origin HEAD:datos
+            echo "Datos guardados en la rama datos" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Armar el sitio
+        run: python scripts/build.py | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: Publicar en GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

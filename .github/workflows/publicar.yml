@@ -60,8 +60,8 @@ jobs:
       CIRCUITO: ${{ github.event_name == 'schedule' || inputs.circuito }}
       CLUB: ${{ inputs.club }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
@@ -73,9 +73,8 @@ jobs:
             git worktree add "$CLUBES_DATA" FETCH_HEAD
             git -C "$CLUBES_DATA" switch -c datos
           else
-            echo "La rama datos todavía no existe: se arranca con los datos de data/ en main."
+            echo "La rama datos todavía no existe: se crea vacía y se llena con esta descarga."
             mkdir -p "$CLUBES_DATA"
-            cp -r data/. "$CLUBES_DATA"/ 2>/dev/null || true
             git -C "$CLUBES_DATA" init -q -b datos
             git -C "$CLUBES_DATA" remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
           fi
@@ -132,10 +131,10 @@ jobs:
       - name: Armar el sitio
         run: python scripts/build.py | tee -a "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
       - name: Publicar en GitHub Pages
         id: deploy
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

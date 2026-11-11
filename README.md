@@ -17,7 +17,7 @@ Cada club es una app instalable aparte (su escudo, sus colores, su nombre).
 | `app/` | El sitio (HTML + CSS + JS, sin dependencias): igual para todos los clubes. `index.html` y `sw.js` son plantillas (`{{clave}}`). |
 | `clubes/<slug>/` | Lo propio de cada club: `club.json`, `escudo.png` e `icons/`. |
 | `config/sitio.json` | Datos del sitio: nombre, autor, año, contacto y `base` (la dirección donde se publica, por ejemplo `/clubes-tdm/`; con dominio propio, `/`). |
-| `data/<slug>/` | Datos para probar en una copia local. En GitHub Actions se usan los de la rama `datos` (variable `CLUBES_DATA`). |
+| rama `datos` | Datos descargados de cada club (`<slug>/tmt_raw.json`, `fet_raw.json`, `cal_raw.json`, `eq_raw.json`). No está en `main`. |
 | `scripts/scrape.py` | Descarga TMT, FETEMBA y el calendario de cada club. |
 | `scripts/equipos.py` | Descarga la Liga de Equipos y la Copa de Clubes (fetembaequipos.ar). |
 | `scripts/build.py` | Arma `_site/<slug>/` para cada club, la portada `_site/index.html` y `_site/404.html`. |
@@ -34,7 +34,7 @@ La Action [`Actualizar y publicar`](.github/workflows/publicar.yml) arma el siti
 - **Al mergear cambios en `main`:** solo arma y publica, sin bajar datos.
 
 Los datos descargados se guardan en la rama **`datos`** (una carpeta por club), no en `main`: así `main` tiene solo código.
-La primera vez, la rama se crea con los datos de `data/`.
+Si la rama no existe, la próxima descarga la crea.
 
 Para que publique, en el repo: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 
@@ -57,7 +57,8 @@ Para que publique, en el repo: **Settings → Pages → Build and deployment →
 
 2. Poner el escudo en `clubes/<slug>/escudo.png` y los íconos de la app en `clubes/<slug>/icons/`
    (`icon-192.png`, `icon-512.png`, `maskable-512.png`, `apple-touch-icon.png`, `favicon-32.png`).
-3. Bajar los datos y armar el sitio:
+3. Bajar los datos y armar el sitio. En una copia local los datos van en `data/` (ignorada por git);
+   para arrancar con los que ya están publicados: `git fetch origin datos && git worktree add data origin/datos`.
 
 ```bash
 pip install -r requirements.txt

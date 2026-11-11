@@ -1,0 +1,36 @@
+{
+  "slug": "4f",
+  "nombre": "Club 4F",
+  "corto": "4F",
+  "subtitulo": "Tenis de Mesa",
+  "app_corto": "Club 4F",
+  "zona": "Mataderos — CABA",
+  "intro": "Club 4F está en Mataderos (CABA), con 5 mesas, clases y torneos del circuito TMT. Está afiliado a FETEMBA. La primera clase es gratis.",
+  "instagram": "https://www.instagram.com/club.4f/",
+  "instagram_usuario": "@club.4f",
+  "colores": {
+    "principal": "#D7191A",
+    "principal_2": "#F2A7A7",
+    "principal_3": "#FCEAEA",
+    "principal_medio": "#A3191A",
+    "acento": "#9D1A1B",
+    "oscuro": "#2B1011"
+  },
+  "tmt": {
+    "club": 260,
+    "sigla": "C4F",
+    "ligas": {
+      "282": {"nombre": "Club 4F", "sede": "Mataderos"}
+    }
+  },
+  "fetemba": {
+    "club": 108,
+    "equipos": "^club 4f"
+  },
+  "sedes": [
+    {"nombre": "Mataderos", "dir": "Timoteo Gordillo 1454", "lugar": "Club 4F", "dias": "Lunes, martes, jueves y viernes"}
+  ],
+  "horarios_titulo": "Horarios",
+  "horarios": "Lunes 18 a 22\nMartes 18 a 22\nJueves 18 a 22\nViernes 20 a 22",
+  "entrenadores": ["Romeo Maldonado", "Cristian Di Pietrantonio", "Catriel Lejarza"]
+}

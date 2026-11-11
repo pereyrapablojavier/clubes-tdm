@@ -54,3 +54,8 @@ def add_club_arg(ap: argparse.ArgumentParser):
 
 def selected(args):
     return [load(s) for s in (args.club or slugs())]
+
+
+if __name__ == "__main__":
+    # lista los clubes (uno por línea): lo usa la Action para encontrar clubes sin datos
+    print("\n".join(slugs()))

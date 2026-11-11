@@ -31,7 +31,7 @@ La Action [`Actualizar y publicar`](.github/workflows/publicar.yml) arma el siti
 - **Automático, lunes y jueves 06:00 (Argentina):** baja los datos de todos los clubes, arma y publica.
 - **Manual** (pestaña **Actions → "Actualizar y publicar" → Run workflow**): elegís el club (vacío = todos) y qué bajar
   (jugadores, calendario, Liga/Copa, Grand Slam y Super Series).
-- **Al mergear cambios en `main`:** solo arma y publica, sin bajar datos.
+- **Al mergear cambios en `main`:** solo arma y publica, sin bajar datos. Si hay un club nuevo (sin datos todavía), baja los suyos completos.
 
 Los datos descargados se guardan en la rama **`datos`** (una carpeta por club), no en `main`: así `main` tiene solo código.
 Si la rama no existe, la próxima descarga la crea.
@@ -53,7 +53,7 @@ Para que publique, en el repo: **Settings → Pages → Build and deployment →
    | `tmt.ligas` | Ligas de TMT que organiza el club (`torneos.asp?filtroLiga=…`) con la sede de cada una. Vacío si no organiza torneos. |
    | `fetemba.club` | Id del club en FETEMBA (`/api/publico/clubes/…`). |
    | `fetemba.equipos` | Expresión con la que empiezan los nombres de sus equipos en fetembaequipos.ar (por ejemplo `^spin tdm`). |
-   | `sedes`, `horarios_titulo`, `entrenadores` | Sedes (nombre, dirección, lugar, días), título de la tarjeta de horarios y entrenadores. |
+   | `sedes`, `horarios_titulo`, `horarios`, `entrenadores` | Sedes (nombre, dirección, lugar, días), título y texto de la tarjeta de horarios (si no está, se usan los de FETEMBA) y entrenadores. |
 
 2. Poner el escudo en `clubes/<slug>/escudo.png` y los íconos de la app en `clubes/<slug>/icons/`
    (`icon-192.png`, `icon-512.png`, `maskable-512.png`, `apple-touch-icon.png`, `favicon-32.png`).

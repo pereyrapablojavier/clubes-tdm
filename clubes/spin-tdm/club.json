@@ -1,0 +1,72 @@
+{
+  "slug": "spin-tdm",
+  "nombre": "SPIN Tenis de Mesa",
+  "corto": "SPIN",
+  "subtitulo": "Tenis de Mesa",
+  "app_corto": "SPIN TDM",
+  "zona": "Villa Crespo · Villa Pueyrredón · Saavedra — CABA",
+  "intro": "SPIN Tenis de Mesa tiene sedes en distintos barrios de CABA, con clases para todos los niveles y edades, escuelita para chicos y chicas, turnos de partidos libres y torneos del circuito TMT. Está afiliado a FETEMBA.",
+  "instagram": "https://www.instagram.com/spintdmarg/",
+  "instagram_usuario": "@spintdmarg",
+  "colores": {
+    "principal": "#74ACDF",
+    "principal_2": "#A9CDEE",
+    "principal_3": "#E8F2FB",
+    "principal_medio": "#5E9BD3",
+    "acento": "#1F5F96",
+    "oscuro": "#0E1B2A"
+  },
+  "tmt": {
+    "club": 234,
+    "sigla": "SPI",
+    "ligas": {
+      "273": {
+        "nombre": "Spin TDM - Donic",
+        "sede": "Villa Crespo"
+      },
+      "246": {
+        "nombre": "Spin TDM - Sede Villa Crespo",
+        "sede": "Villa Crespo"
+      },
+      "349": {
+        "nombre": "Spin TDM DONIC - Sede Saavedra",
+        "sede": "Saavedra"
+      },
+      "284": {
+        "nombre": "Donic Spin TdM - Villa Pueyrredón",
+        "sede": "Villa Pueyrredón"
+      }
+    }
+  },
+  "fetemba": {
+    "club": 76,
+    "equipos": "^spin tdm"
+  },
+  "sedes": [
+    {
+      "nombre": "Villa Crespo",
+      "dir": "Antezana 340",
+      "lugar": "Asociación Benito Nazar",
+      "dias": "Lunes a sábados"
+    },
+    {
+      "nombre": "Villa Pueyrredón",
+      "dir": "Terrada 4342",
+      "lugar": "Club La Emiliana",
+      "dias": "Lunes, miércoles, jueves y viernes"
+    },
+    {
+      "nombre": "Saavedra",
+      "dir": "Pico 3540",
+      "lugar": "Asociación Vecinal Loma de Saavedra",
+      "dias": "Lunes, miércoles y viernes"
+    }
+  ],
+  "horarios_titulo": "Horarios · Sede Villa Crespo",
+  "entrenadores": [
+    "Darío Neira",
+    "Rodrigo Ezequiel Delgadillo",
+    "Giselle Muñoz"
+  ],
+  "favoritos_clave_vieja": "spin.favs"
+}

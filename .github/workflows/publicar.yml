@@ -1,6 +1,6 @@
 name: Actualizar y publicar
 
-# - Automático (lunes y jueves): APAGADO por ahora (ver "schedule" más abajo).
+# - Automático (una vez por semana, los jueves 06:17 Argentina): baja los datos de todos los clubes activos, arma el sitio y lo publica.
 # - Manual (Actions → "Actualizar y publicar" → Run workflow): elegís qué bajar y de qué club.
 # - Al mergear cambios en main: solo arma y publica (no baja datos).
 # Los datos descargados se guardan en la rama "datos" (no en main): así main tiene solo código.
@@ -28,11 +28,9 @@ on:
         description: "Grand Slam y Super Series (FETEMBA; solo baja si hay novedades)"
         type: boolean
         default: true
-  # Descarga automática APAGADA por ahora (mientras tanto se actualiza solo el sitio demo de spin-tdm).
-  # Para volver a activarla, descomentar estas 3 líneas. Se recomienda un minuto que no sea en punto (GitHub se satura a la hora exacta):
-  # schedule:
-  #   # Lunes y jueves 09:17 UTC = 06:17 en Argentina
-  #   - cron: "17 9 * * 1,4"
+  schedule:
+    # Una vez por semana, los jueves 09:17 UTC = 06:17 en Argentina. Minuto 17 a propósito: a la hora en punto GitHub se satura y puede saltearse la corrida
+    - cron: "17 9 * * 4"
   push:
     branches: [main]
     paths: ["app/**", "clubes/**", "config/**", "scripts/**", ".github/workflows/publicar.yml"]

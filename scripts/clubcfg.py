@@ -14,8 +14,14 @@ CLUBES = ROOT / "clubes"
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 
 
-def slugs():
-    return sorted(p.parent.name for p in CLUBES.glob("*/club.json"))
+def slugs(incluir_inactivos=False):
+    """Clubes que se procesan y se publican. Los que tienen "activo": false en su club.json se omiten
+    (la configuración queda guardada para cuando se quiera publicar; solo corren si se pide con --club)."""
+    out = []
+    for p in sorted(CLUBES.glob("*/club.json")):
+        if incluir_inactivos or json.loads(p.read_text()).get("activo", True) is not False:
+            out.append(p.parent.name)
+    return out
 
 
 def load(slug):

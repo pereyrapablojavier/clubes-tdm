@@ -28,7 +28,7 @@ La versión de los archivos (`?v=` y la caché de la app) se calcula sola a part
 
 La Action [`Actualizar y publicar`](.github/workflows/publicar.yml) arma el sitio y lo publica en GitHub Pages:
 
-- **Automático (lunes y jueves):** apagado por ahora. Para volver a activarlo, descomentar `schedule` en el workflow.
+- **Automático, una vez por semana (jueves 06:17 Argentina):** baja los datos de todos los clubes activos, arma y publica.
 - **Manual** (pestaña **Actions → "Actualizar y publicar" → Run workflow**): elegís el club (vacío = todos) y qué bajar
   (jugadores, calendario, Liga/Copa, Grand Slam y Super Series).
 - **Al mergear cambios en `main`:** solo arma y publica, sin bajar datos. Si hay un club nuevo (sin datos todavía), baja los suyos completos.
@@ -46,6 +46,10 @@ de jugadores se juntan en una sola (`/<club>/jugador`): no se mide qué jugador 
 `localStorage.setItem("skipgc", "t")`.
 
 ## Sumar un club
+
+**Club "no activo":** con `"activo": false` en su `club.json` el club se omite: no se descarga, no se arma, no se publica ni
+aparece en la portada. La configuración queda guardada; para publicarlo, cambiar a `true` (o borrar la línea).
+Hoy 4F está así.
 
 1. Crear `clubes/<slug>/club.json` (el `slug` es la dirección: minúsculas, números y guiones). Tomar como modelo
    [`clubes/spin-tdm/club.json`](clubes/spin-tdm/club.json):

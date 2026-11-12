@@ -45,11 +45,12 @@
     toggle(id) { const l = favs.list(); const i = l.indexOf(id); if (i >= 0) l.splice(i, 1); else l.push(id); store.set(K().slug + ".favs", l); return i < 0; },
   };
   const favLabel = (on) => (on ? "★ En Favoritos" : "☆ Agregar a Favoritos");
-  const spark = (vals, w = 90, h = 26) => {
+  // sube: si se pasa, define el color (verde/rojo); si no, se compara el último rating con el primero
+  const spark = (vals, w = 90, h = 26, sube = null) => {
     if (!vals || vals.length < 2) return "";
     const mn = Math.min(...vals), mx = Math.max(...vals), r = mx - mn || 1;
     const pts = vals.map((v, i) => `${((i / (vals.length - 1)) * (w - 2) + 1).toFixed(1)},${(h - 2 - ((v - mn) / r) * (h - 4)).toFixed(1)}`).join(" ");
-    const up = vals[vals.length - 1] >= vals[0];
+    const up = sube == null ? vals[vals.length - 1] >= vals[0] : sube;
     return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline fill="none" stroke="${up ? css("--ok") : css("--mal")}" stroke-width="1.8" points="${pts}"/></svg>`;
   };
   const tile = (v, l, s = "") => `<div class="tile"><div class="l">${l}</div><div class="v num">${v}</div>${s ? `<div class="s">${s}</div>` : ""}</div>`;
@@ -136,7 +137,7 @@
       <div class="card">
         <div class="card-head"><h3>Top 10 del club · TMT</h3><a href="#/jugadores">Ver todos →</a></div>
         <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Jugador</th><th>Cat.</th><th class="r">Rating</th><th>Tendencia</th></tr></thead><tbody>
-        ${top.map((p, i) => `<tr><td class="num">${i + 1}</td><td>${plink(p.id, p.name)}</td><td>${catBadge(p.cat)}</td><td class="r num"><b>${fmt(p.rating)}</b></td><td>${spark(p.spark)}</td></tr>`).join("")}
+        ${top.map((p, i) => `<tr><td class="num">${i + 1}</td><td>${plink(p.id, p.name)}</td><td>${catBadge(p.cat)}</td><td class="r num"><b>${fmt(p.rating)}</b></td><td>${spark(p.spark, 90, 26, p.delta == null ? null : p.delta >= 0)}</td></tr>`).join("")}
         </tbody></table></div>
       </div>
       <div class="card">
@@ -176,7 +177,7 @@
     const cols = [
       ["clubPos", "#", "r"], ["name", "Jugador"], ["cat", "Cat. TMT"], ["rating", "Rating TMT", "r"], ["rankPos", "Pos. TMT", "r"],
       ["wr", "% Gan. total", "r"], ["wr12", "% Gan. 12m", "r"], ["pj", "Partidos", "r"], ["pod", "Podios", "r"], ["delta", "Var. 20 torneos", "r"],
-      ["fr", "Rating FETEMBA", "r"], ["fcat", "Cat. FET", ""], ["ultimo", "Último torneo", ""],
+      ["spark", "Tendencia", ""], ["fr", "Rating FETEMBA", "r"], ["fcat", "Cat. FET", ""], ["ultimo", "Último torneo", ""],
     ];
     $app.innerHTML = `
       <div class="section"><h1>Jugadores</h1>
@@ -197,7 +198,8 @@
         (!listState.src || (listState.src === "both" ? p.src.length === 2 : listState.src === "tmt" ? p.src.includes("tmt") : p.src.includes("fet"))));
       const k = listState.sort, dir = listState.asc ? 1 : -1;
       rows = rows.slice().sort((a, b) => {
-        let x = a[k], y = b[k];
+        const kk = k === "spark" ? "delta" : k; // la tendencia se ordena por la variación de rating
+        let x = a[kk], y = b[kk];
         if (k === "cat") { x = x ? CATS.indexOf(x) : 99; y = y ? CATS.indexOf(y) : 99; return (x - y) * -dir; }
         if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1;
         return typeof x === "string" ? x.localeCompare(y) * dir : (x - y) * dir;
@@ -207,7 +209,7 @@
         <td>${favs.has(p.id) ? `<span class="favstar" title="En Favoritos">★</span> ` : ""}${plink(p.id, p.name)} ${p.src.length === 1 && p.src[0] === "fet" ? srcBadges(p.src) : ""}</td>
         <td>${catBadge(p.cat)}</td><td class="r num"><b>${fmt(p.rating)}</b></td><td class="r num">${fmt(p.rankPos)}</td>
         <td class="r num">${p.wr != null ? p.wr + "%" : "–"}</td><td class="r num">${p.wr12 != null ? p.wr12 + "%" : "–"}</td>
-        <td class="r num">${fmt(p.pj)}</td><td class="r num">${fmt(p.pod)}</td><td class="r num">${signed(p.delta)}</td>
+        <td class="r num">${fmt(p.pj)}</td><td class="r num">${fmt(p.pod)}</td><td class="r num">${signed(p.delta)}</td><td>${spark(p.spark, 90, 26, p.delta == null ? null : p.delta >= 0) || '<span class="muted">–</span>'}</td>
         <td class="r num">${fmt(p.fr)}</td><td>${p.fcat ? `<span class="badge fet">${esc(p.fcat)}</span>` : "–"}</td><td class="num">${fdate(p.ultimo)}</td></tr>`).join("");
       $app.querySelectorAll("th").forEach((th) => { th.classList.toggle("sorted", th.dataset.k === k); th.classList.toggle("asc", th.dataset.k === k && listState.asc); });
       $app.querySelectorAll("#cats .chip").forEach((c) => c.classList.toggle("on", c.dataset.c === listState.cat));

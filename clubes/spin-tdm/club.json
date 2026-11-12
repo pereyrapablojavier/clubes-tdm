@@ -64,9 +64,18 @@
   ],
   "horarios_titulo": "Horarios · Sede Villa Crespo",
   "entrenadores": [
-    "Darío Neira",
-    "Rodrigo Ezequiel Delgadillo",
-    "Giselle Muñoz"
+    {
+      "nombre": "Darío Neira",
+      "instagram": "https://www.instagram.com/neiradario89/"
+    },
+    {
+      "nombre": "Rodrigo Ezequiel Delgadillo",
+      "instagram": "https://www.instagram.com/rodrigodelgadillotm/"
+    },
+    {
+      "nombre": "Giselle Muñoz",
+      "instagram": "https://www.instagram.com/giselle.munoz.583/"
+    }
   ],
   "favoritos_clave_vieja": "spin.favs"
 }

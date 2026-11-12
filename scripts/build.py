@@ -238,7 +238,7 @@ def build():
         "instalaciones": fd.get("instalaciones"), "como_llegar": fd.get("como_llegar"),
         "instagram": CFG.get("instagram"),
         "sedes": CFG.get("sedes") or [],
-        "entrenadores": CFG.get("entrenadores") or [],
+        "entrenadores": entrenadores(CFG),
         "cfg": app_cfg(CFG), "sitio": site_cfg(),
         "stats": {
             "tmt_players": len(tmt_pl), "fet_players": len(fet_roster),
@@ -309,6 +309,24 @@ def render(template, values):
             raise SystemExit(f"Falta el valor de {{{{{m.group(1)}}}}} en la plantilla")
         return html.escape(str(values[m.group(1)]), quote=True)
     return re.sub(r"\{\{(\w+)\}\}", sub, template)
+
+
+IG_RE = re.compile(r"^https://(www\.)?instagram\.com/[A-Za-z0-9._/-]+/?$")
+
+
+def entrenadores(cfg):
+    """Entrenadores del club: cada uno es un texto o {"nombre": ..., "instagram": "https://www.instagram.com/..."}."""
+    out = []
+    for e in cfg.get("entrenadores") or []:
+        if isinstance(e, str):
+            out.append({"nombre": e})
+            continue
+        if not isinstance(e, dict) or not e.get("nombre"):
+            raise SystemExit(f"{cfg['slug']}: cada entrenador necesita un nombre (es {e!r})")
+        if e.get("instagram") and not IG_RE.match(e["instagram"]):
+            raise SystemExit(f"{cfg['slug']}: instagram de {e['nombre']} inválido: {e['instagram']!r} (https://www.instagram.com/usuario/)")
+        out.append({k: e[k] for k in ("nombre", "instagram") if e.get(k)})
+    return out
 
 
 def seguinos(cfg):

@@ -238,7 +238,7 @@ def build():
         "instalaciones": fd.get("instalaciones"), "como_llegar": fd.get("como_llegar"),
         "instagram": CFG.get("instagram"),
         "sedes": CFG.get("sedes") or [],
-        "entrenadores": CFG.get("entrenadores") or [],
+        "entrenadores": entrenadores(CFG),
         "cfg": app_cfg(CFG), "sitio": site_cfg(),
         "stats": {
             "tmt_players": len(tmt_pl), "fet_players": len(fet_roster),
@@ -311,14 +311,40 @@ def render(template, values):
     return re.sub(r"\{\{(\w+)\}\}", sub, template)
 
 
+IG_RE = re.compile(r"^https://(www\.)?instagram\.com/[A-Za-z0-9._/-]+/?$")
+
+
+def entrenadores(cfg):
+    """Entrenadores del club: cada uno es un texto o {"nombre": ..., "instagram": "https://www.instagram.com/..."}."""
+    out = []
+    for e in cfg.get("entrenadores") or []:
+        if isinstance(e, str):
+            out.append({"nombre": e})
+            continue
+        if not isinstance(e, dict) or not e.get("nombre"):
+            raise SystemExit(f"{cfg['slug']}: cada entrenador necesita un nombre (es {e!r})")
+        if e.get("instagram") and not IG_RE.match(e["instagram"]):
+            raise SystemExit(f"{cfg['slug']}: instagram de {e['nombre']} inválido: {e['instagram']!r} (https://www.instagram.com/usuario/)")
+        out.append({k: e[k] for k in ("nombre", "instagram") if e.get(k)})
+    return out
+
+
 def seguinos(cfg):
-    """Opción 'Seguinos' del menú Mi Club: lleva al Instagram del club (se omite si el club no tiene)."""
-    url = cfg.get("instagram")
-    if not url:
-        return ""
-    if not re.match(r"^https://", url):
-        raise SystemExit(f"{cfg['slug']}: instagram debe empezar con https:// (es {url!r})")
-    return f'<a href="{html.escape(url, quote=True)}" target="_blank" rel="noopener">Seguinos</a>'
+    """Opciones del final del menú Mi Club: 'Seguinos' (Instagram del club, se omite si no tiene) y, debajo,
+    los enlaces extra del club (club.json -> menu_enlaces: [{"texto": ..., "url": "https://..."}])."""
+    links = []
+    if cfg.get("instagram"):
+        links.append(("Seguinos", cfg["instagram"]))
+    for e in cfg.get("menu_enlaces") or []:
+        if not isinstance(e, dict) or not e.get("texto") or not e.get("url"):
+            raise SystemExit(f"{cfg['slug']}: cada menu_enlaces necesita texto y url (es {e!r})")
+        links.append((e["texto"], e["url"]))
+    out = []
+    for texto, url in links:
+        if not re.match(r"^https://[^\s\"'<>]+$", url):
+            raise SystemExit(f"{cfg['slug']}: el enlace '{texto}' debe empezar con https:// y no tener espacios (es {url!r})")
+        out.append(f'<a href="{html.escape(url, quote=True)}" target="_blank" rel="noopener">{html.escape(texto)}</a>')
+    return "\n            ".join(out)
 
 
 GC_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")

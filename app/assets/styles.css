@@ -304,3 +304,7 @@ details.circ .fecha span { font-size: 10px; letter-spacing: .5px; }
 .legal .card p, .legal .card li { max-width: 760px; }
 .legal .card ul { padding-left: 20px; margin: 8px 0; }
 .legal .card li { margin: 4px 0; }
+
+/* link de Instagram de cada entrenador: no se corta en dos renglones; el nombre cede el lugar */
+.list li > .ig { white-space: nowrap; flex: 0 0 auto; margin-left: 12px; }
+.list li > span:first-child { min-width: 0; }

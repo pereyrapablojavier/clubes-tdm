@@ -65,6 +65,7 @@ Hoy 4F está así.
    | `fetemba.club` | Id del club en FETEMBA (`/api/publico/clubes/…`). |
    | `fetemba.equipos` | Expresión con la que empiezan los nombres de sus equipos en fetembaequipos.ar (por ejemplo `^spin tdm`). |
    | `sedes`, `horarios_titulo`, `horarios`, `entrenadores` | Sedes (nombre, dirección, lugar, días), título y texto de la tarjeta de horarios (si no está, se usan los de FETEMBA) y entrenadores. |
+| `menu_enlaces` | Enlaces extra al final del menú Mi Club, debajo de "Seguinos": `[{"texto": "Somos Selección", "url": "https://..."}]`. Opcional. |
 
 2. Poner el escudo en `clubes/<slug>/escudo.png` y los íconos de la app en `clubes/<slug>/icons/`
    (`icon-192.png`, `icon-512.png`, `maskable-512.png`, `apple-touch-icon.png`, `favicon-32.png`).

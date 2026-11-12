@@ -28,7 +28,7 @@ La versión de los archivos (`?v=` y la caché de la app) se calcula sola a part
 
 La Action [`Actualizar y publicar`](.github/workflows/publicar.yml) arma el sitio y lo publica en GitHub Pages:
 
-- **Automático, lunes y jueves 06:00 (Argentina):** baja los datos de todos los clubes, arma y publica.
+- **Automático (lunes y jueves):** apagado por ahora. Para volver a activarlo, descomentar `schedule` en el workflow.
 - **Manual** (pestaña **Actions → "Actualizar y publicar" → Run workflow**): elegís el club (vacío = todos) y qué bajar
   (jugadores, calendario, Liga/Copa, Grand Slam y Super Series).
 - **Al mergear cambios en `main`:** solo arma y publica, sin bajar datos. Si hay un club nuevo (sin datos todavía), baja los suyos completos.

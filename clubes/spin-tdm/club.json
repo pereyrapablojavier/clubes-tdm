@@ -77,5 +77,11 @@
       "instagram": "https://www.instagram.com/giselle.munoz.583/"
     }
   ],
-  "favoritos_clave_vieja": "spin.favs"
+  "favoritos_clave_vieja": "spin.favs",
+  "menu_enlaces": [
+    {
+      "texto": "Somos Selección",
+      "url": "https://www.instagram.com/fatema_arg/"
+    }
+  ]
 }

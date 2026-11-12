@@ -330,13 +330,21 @@ def entrenadores(cfg):
 
 
 def seguinos(cfg):
-    """Opción 'Seguinos' del menú Mi Club: lleva al Instagram del club (se omite si el club no tiene)."""
-    url = cfg.get("instagram")
-    if not url:
-        return ""
-    if not re.match(r"^https://", url):
-        raise SystemExit(f"{cfg['slug']}: instagram debe empezar con https:// (es {url!r})")
-    return f'<a href="{html.escape(url, quote=True)}" target="_blank" rel="noopener">Seguinos</a>'
+    """Opciones del final del menú Mi Club: 'Seguinos' (Instagram del club, se omite si no tiene) y, debajo,
+    los enlaces extra del club (club.json -> menu_enlaces: [{"texto": ..., "url": "https://..."}])."""
+    links = []
+    if cfg.get("instagram"):
+        links.append(("Seguinos", cfg["instagram"]))
+    for e in cfg.get("menu_enlaces") or []:
+        if not isinstance(e, dict) or not e.get("texto") or not e.get("url"):
+            raise SystemExit(f"{cfg['slug']}: cada menu_enlaces necesita texto y url (es {e!r})")
+        links.append((e["texto"], e["url"]))
+    out = []
+    for texto, url in links:
+        if not re.match(r"^https://[^\s\"'<>]+$", url):
+            raise SystemExit(f"{cfg['slug']}: el enlace '{texto}' debe empezar con https:// y no tener espacios (es {url!r})")
+        out.append(f'<a href="{html.escape(url, quote=True)}" target="_blank" rel="noopener">{html.escape(texto)}</a>')
+    return "\n            ".join(out)
 
 
 GC_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")

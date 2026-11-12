@@ -311,6 +311,21 @@ def render(template, values):
     return re.sub(r"\{\{(\w+)\}\}", sub, template)
 
 
+GC_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+
+
+def analitica(manual):
+    """Script del contador de visitas (GoatCounter: sin cookies, no guarda datos personales).
+    manual=True: el sitio de cada club cuenta él mismo cada sección (cambia de sección sin recargar)."""
+    code = clubcfg.sitio().get("goatcounter")
+    if not code:
+        return ""
+    if not GC_RE.match(code):
+        raise SystemExit(f"config/sitio.json: goatcounter inválido: {code!r}")
+    cfg = " data-goatcounter-settings='{\"no_onload\": true}'" if manual else ""
+    return f'<script data-goatcounter="https://{code}.goatcounter.com/count"{cfg} async src="https://gc.zgo.at/count.js"></script>'
+
+
 def club_files(cfg):
     """Escudo e íconos del club: clubes/<slug>/escudo.png y clubes/<slug>/icons/*.png."""
     d = clubcfg.CLUBES / cfg["slug"]
@@ -339,7 +354,7 @@ def write_app():
     (OUT / "assets" / "icons").mkdir(exist_ok=True)
     for f in club_files(cfg)[1:]:
         shutil.copy(f, OUT / "assets" / "icons" / f.name)
-    (OUT / "index.html").write_text(render((APP / "index.html").read_text(), values))
+    (OUT / "index.html").write_text(render((APP / "index.html").read_text(), values).replace("<!--analitica-->", analitica(True)))
     (OUT / "sw.js").write_text(render((APP / "sw.js").read_text(), values))
     manifest = {
         "name": cfg["nombre"], "short_name": values["app_corto"],
@@ -407,6 +422,7 @@ def write_portada(cfgs):
   <meta name="theme-color" content="#0E1B2A">
   {FONTS}
   <style>{PORTADA_CSS}</style>
+  {analitica(False)}
 </head>
 <body>
   <header><div class="in">{head}</div></header>

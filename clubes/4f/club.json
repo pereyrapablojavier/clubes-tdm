@@ -1,5 +1,6 @@
 {
   "slug": "4f",
+  "activo": false,
   "nombre": "Club 4F",
   "corto": "4F",
   "subtitulo": "Tenis de Mesa",
@@ -20,7 +21,10 @@
     "club": 260,
     "sigla": "C4F",
     "ligas": {
-      "282": {"nombre": "Club 4F", "sede": "Mataderos"}
+      "282": {
+        "nombre": "Club 4F",
+        "sede": "Mataderos"
+      }
     }
   },
   "fetemba": {
@@ -28,9 +32,18 @@
     "equipos": "^club 4f"
   },
   "sedes": [
-    {"nombre": "Mataderos", "dir": "Timoteo Gordillo 1454", "lugar": "Club 4F", "dias": "Lunes, martes, jueves y viernes"}
+    {
+      "nombre": "Mataderos",
+      "dir": "Timoteo Gordillo 1454",
+      "lugar": "Club 4F",
+      "dias": "Lunes, martes, jueves y viernes"
+    }
   ],
   "horarios_titulo": "Horarios",
   "horarios": "Lunes 18 a 22\nMartes 18 a 22\nJueves 18 a 22\nViernes 20 a 22",
-  "entrenadores": ["Romeo Maldonado", "Cristian Di Pietrantonio", "Catriel Lejarza"]
+  "entrenadores": [
+    "Romeo Maldonado",
+    "Cristian Di Pietrantonio",
+    "Catriel Lejarza"
+  ]
 }

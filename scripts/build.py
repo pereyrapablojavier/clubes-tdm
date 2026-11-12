@@ -311,6 +311,16 @@ def render(template, values):
     return re.sub(r"\{\{(\w+)\}\}", sub, template)
 
 
+def seguinos(cfg):
+    """Opción 'Seguinos' del menú Mi Club: lleva al Instagram del club (se omite si el club no tiene)."""
+    url = cfg.get("instagram")
+    if not url:
+        return ""
+    if not re.match(r"^https://", url):
+        raise SystemExit(f"{cfg['slug']}: instagram debe empezar con https:// (es {url!r})")
+    return f'<a href="{html.escape(url, quote=True)}" target="_blank" rel="noopener">Seguinos</a>'
+
+
 GC_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 
 
@@ -354,7 +364,7 @@ def write_app():
     (OUT / "assets" / "icons").mkdir(exist_ok=True)
     for f in club_files(cfg)[1:]:
         shutil.copy(f, OUT / "assets" / "icons" / f.name)
-    (OUT / "index.html").write_text(render((APP / "index.html").read_text(), values).replace("<!--analitica-->", analitica(True)))
+    (OUT / "index.html").write_text(render((APP / "index.html").read_text(), values).replace("<!--analitica-->", analitica(True)).replace("<!--seguinos-->", seguinos(cfg)))
     (OUT / "sw.js").write_text(render((APP / "sw.js").read_text(), values))
     manifest = {
         "name": cfg["nombre"], "short_name": values["app_corto"],

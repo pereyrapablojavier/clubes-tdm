@@ -38,6 +38,13 @@ Si la rama no existe, la próxima descarga la crea.
 
 Para que publique, en el repo: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 
+## Visitas
+
+Las visitas se cuentan con [GoatCounter](https://www.goatcounter.com/) (sin cookies, sin datos personales). El código del panel está en
+`config/sitio.json` → `goatcounter` (si se borra, no se cuenta nada). Cada club se ve por separado (`/spin-tdm/…`, `/4f/…`) y las fichas
+de jugadores se juntan en una sola (`/<club>/jugador`): no se mide qué jugador se mira. Para no contarte a vos, en la consola del navegador:
+`localStorage.setItem("skipgc", "t")`.
+
 ## Sumar un club
 
 1. Crear `clubes/<slug>/club.json` (el `slug` es la dirección: minúsculas, números y guiones). Tomar como modelo

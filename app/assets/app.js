@@ -66,7 +66,8 @@
   const axes = (ticks, y, labels, x) => {
     const g = css("--linea"), ink = css("--gris");
     let o = ticks.map((t) => `<line x1="${PL}" x2="${W - PR}" y1="${y(t)}" y2="${y(t)}" stroke="${g}"/><text x="${PL - 6}" y="${y(t) + 4}" text-anchor="end" font-size="11" fill="${ink}">${fmt(t)}</text>`).join("");
-    const every = Math.max(1, Math.ceil(labels.length / 7));
+    // con pocas etiquetas (por ejemplo las 8 categorías) se muestran todas; con muchas (años) se saltean para que no se amontonen
+    const every = labels.length <= 10 ? 1 : Math.max(1, Math.ceil(labels.length / 7));
     o += labels.map((l, i) => (i % every === 0 || i === labels.length - 1) && !(i !== labels.length - 1 && labels.length - 1 - i < every && i % every === 0 && i !== 0 && false)
       ? `<text x="${x(i)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="${ink}">${esc(l)}</text>` : "").join("");
     return o;

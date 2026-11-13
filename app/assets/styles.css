@@ -306,5 +306,7 @@ details.circ .fecha span { font-size: 10px; letter-spacing: .5px; }
 .legal .card li { margin: 4px 0; }
 
 /* link de Instagram de cada entrenador: no se corta en dos renglones; el nombre cede el lugar */
-.list li > .ig { white-space: nowrap; flex: 0 0 auto; margin-left: 12px; }
+/* ícono de Instagram de cada entrenador: área táctil de 34px y el nombre cede el lugar */
+.list li > .ig { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; flex: 0 0 auto; margin: -6px -6px -6px 12px; border-radius: 10px; }
+.list li > .ig:hover { background: var(--celeste-3); text-decoration: none; }
 .list li > span:first-child { min-width: 0; }

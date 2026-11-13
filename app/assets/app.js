@@ -44,6 +44,8 @@
     has: (id) => favs.list().includes(id),
     toggle(id) { const l = favs.list(); const i = l.indexOf(id); if (i >= 0) l.splice(i, 1); else l.push(id); store.set(K().slug + ".favs", l); return i < 0; },
   };
+  // ícono de Instagram (línea simple; toma el color del texto)
+  const IG_ICON = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>`;
   const favLabel = (on) => (on ? "★ En Favoritos" : "☆ Agregar a Favoritos");
   // sube: si se pasa, define el color (verde/rojo); si no, se compara el último rating con el primero
   const spark = (vals, w = 90, h = 26, sube = null) => {
@@ -452,8 +454,7 @@
           ${c.instalaciones ? `<p class="small muted">${esc(c.instalaciones)}</p>` : ""}${c.como_llegar ? `<p class="small muted">${esc(c.como_llegar)}</p>` : ""}</div>
         ${(c.horarios_sedes || []).map((h) => `<div class="card"><h3>🕒 ${esc(h.titulo)}</h3><p style="white-space:pre-line;margin:0">${esc(h.texto)}</p>${(h.notas || []).map((n) => `<p class="small muted">${esc(n)}</p>`).join("")}</div>`).join("")}
         <div class="card"><h3>👥 Entrenadores</h3><ul class="list">${c.entrenadores.map((e) => { const o = typeof e === "string" ? { nombre: e } : e; const ig = /^https:\/\//.test(o.instagram || "") ? o.instagram : "";
-          return `<li><span>${esc(o.nombre)}</span>${ig ? `<a class="small ig" href="${esc(ig)}" target="_blank" rel="noopener" aria-label="Instagram de ${esc(o.nombre)}">Instagram ↗</a>` : ""}</li>`; }).join("")}</ul>
-          <p style="margin-top:14px"><a class="btn" target="_blank" rel="noopener" href="${c.instagram}">Escribinos por Instagram</a></p>
+          return `<li><span>${esc(o.nombre)}</span>${ig ? `<a class="ig" href="${esc(ig)}" target="_blank" rel="noopener" aria-label="Instagram de ${esc(o.nombre)}" title="Instagram de ${esc(o.nombre)}">${IG_ICON}</a>` : ""}</li>`; }).join("")}</ul>
           <p class="small muted">Club en <a target="_blank" rel="noopener" href="${TMT}/clubes_ampliar.asp?codigo=${c.tmt_code}">TMT ↗</a> y en <a target="_blank" rel="noopener" href="${FET}/clubes">FETEMBA ↗</a>.</p></div>
       </div>
       <div class="note section">Las estadísticas se toman automáticamente de los sitios públicos de TMT y FETEMBA. Algunos jugadores del club están federados en FETEMBA por otra institución; en su ficha se indica el club con el que figuran.</div>

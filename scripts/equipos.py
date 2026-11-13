@@ -312,6 +312,7 @@ def scrape_club():
 
     # próximos partidos (si no se pueden leer, se conservan los de la descarga anterior)
     upcoming = fetch_proximos(lw)
+    proximos_ok = upcoming is not None
     if upcoming is None:
         upcoming = []
         if path.exists():
@@ -323,6 +324,7 @@ def scrape_club():
     path.write_text(json.dumps({"updated": datetime.now(timezone.utc).isoformat(), "zones": zones,
                                 "playoff": loose, "sets": sets, "upcoming": upcoming}, ensure_ascii=False))
     print(f"FETEMBA Equipos: {len(zones)} zonas, {len(loose)} cruces de play off, {len(sets)} encuentros con sets, {len(upcoming)} próximos")
+    return proximos_ok   # False: las tablas y resultados se actualizaron, pero los próximos partidos no se pudieron leer (se conservaron los anteriores)
 
 
 def main():
@@ -339,7 +341,9 @@ def main():
             continue
         configure(cfg)
         try:
-            scrape_proximos() if args.solo == "proximos" else scrape_club()
+            if (scrape_proximos() if args.solo == "proximos" else scrape_club()) is False:
+                print("FETEMBA Equipos: los próximos partidos no se pudieron actualizar.", file=sys.stderr)
+                fallas.append(cfg["slug"])
         except Exception as e:  # noqa
             print(e, file=sys.stderr)
             fallas.append(cfg["slug"])

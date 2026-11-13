@@ -78,6 +78,11 @@ Cuando se suma un jugador a la lista, la primera vez solo se lo registra (no avi
 Los avisos llegan al ritmo de las actualizaciones (jugadores: jueves). Probar: `python scripts/novedades.py --no-enviar`.
 Son datos públicos de TMT; ojo con el chat de destino si el jugador es menor.
 
+**Sumar o quitar jugadores sin tocar código**: Actions → **Seguir jugadores** → Run workflow. Acción `agregar` o `quitar` con los códigos
+separados por coma (se ven en la URL de la ficha: `…#/jugador/<código>`; solo jugadores del plantel). Al agregar manda "Ahora seguimos a…" y
+la ficha de los nuevos. La acción `resumen` manda la ficha actual de los seguidos (o solo de los códigos que pongas) y `lista` muestra a quién
+se sigue. La lista agregada se guarda en la rama `datos` (`<slug>/seguir.json`) y se suma a la de `club.json`.
+
 ## Vista previa al compartir (WhatsApp, Telegram…)
 
 Cada club tiene `clubes/<slug>/og.png` (1200x630) y la portada `config/og.png`. Se generan con

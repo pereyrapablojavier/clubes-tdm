@@ -1,0 +1,89 @@
+name: Seguir jugadores
+
+# Suma o quita jugadores de los avisos por Telegram, y manda el resumen de los jugadores seguidos.
+#   Actions → "Seguir jugadores" → Run workflow:
+#     - Acción "agregar" / "quitar": poné los códigos TMT separados por coma (están en la URL de la ficha: …#/jugador/<código>).
+#     - Acción "resumen": manda por Telegram la ficha actual de los seguidos (o solo de los códigos que pongas).
+#     - Acción "lista": solo muestra a quién se sigue (en el resumen de la corrida).
+# Al agregar, manda "Ahora seguimos a…" y la ficha de los nuevos; desde ahí se avisa lo nuevo en cada actualización.
+# No publica el sitio. La lista se guarda en la rama "datos" (clubes/<slug>/club.json trae los iniciales).
+
+on:
+  workflow_dispatch:
+    inputs:
+      club:
+        description: "Club (slug, por ejemplo spin-tdm)"
+        type: string
+        default: "spin-tdm"
+      accion:
+        description: "Qué hacer"
+        type: choice
+        options: [agregar, quitar, resumen, lista]
+        required: true
+      ids:
+        description: "Códigos TMT separados por coma (para agregar/quitar; en resumen, vacío = todos los seguidos)"
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  seguir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Una corrida por vez junto con las actualizaciones (todas escriben en la rama "datos")
+    concurrency:
+      group: publicar
+      cancel-in-progress: false
+    env:
+      CLUBES_DATA: ${{ github.workspace }}/.datos
+      CLUB: ${{ inputs.club }}
+      ACCION: ${{ inputs.accion }}
+      IDS: ${{ inputs.ids }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+
+      - name: Traer los datos guardados (rama datos)
+        run: |
+          git fetch --depth 1 origin datos
+          git worktree add "$CLUBES_DATA" FETCH_HEAD
+          git -C "$CLUBES_DATA" switch -c datos
+
+      - name: Armar el sitio (solo para leer los datos)
+        run: python scripts/build.py
+
+      - name: Sumar o quitar
+        if: env.ACCION == 'agregar' || env.ACCION == 'quitar' || env.ACCION == 'lista'
+        run: python scripts/seguir.py --club "$CLUB" "$ACCION" "$IDS" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Avisar a los nuevos y mandar su ficha
+        if: env.ACCION == 'agregar'
+        run: |
+          python scripts/novedades.py --club "$CLUB"
+          python scripts/novedades.py --club "$CLUB" --resumen "$IDS"
+
+      - name: Resumen de jugadores
+        if: env.ACCION == 'resumen'
+        run: python scripts/novedades.py --club "$CLUB" --resumen ${IDS:+"$IDS"} | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Guardar la lista (rama datos)
+        if: env.ACCION == 'agregar' || env.ACCION == 'quitar'
+        run: |
+          cd "$CLUBES_DATA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then echo "Sin cambios"; exit 0; fi
+          git commit -q -m "Seguimiento de jugadores: ${ACCION} ${IDS} (${CLUB})"
+          for i in 1 2 3; do
+            git push -q origin HEAD:datos && exit 0
+            git fetch -q origin datos && git rebase -q FETCH_HEAD || exit 1
+          done
+          exit 1

@@ -1,8 +1,13 @@
 name: Actualizar y publicar
 
-# - Automático (una vez por semana, los jueves 06:17 Argentina): baja los datos de todos los clubes activos, arma el sitio y lo publica.
-# - Manual (Actions → "Actualizar y publicar" → Run workflow): elegís qué bajar y de qué club.
-# - Al mergear cambios en main: solo arma y publica (no baja datos).
+# Flujo común: baja las partes que se pidan, guarda los datos en la rama "datos", arma el sitio y lo publica.
+#
+# - Manual (Actions → "Actualizar y publicar" → Run workflow): elegís el club y qué bajar.
+# - Lo llaman las Actions con horario propio (cada una baja una parte, ver los archivos "actualizar-*.yml"):
+#     Actualizar calendarios  → calendario de torneos, próximos partidos de Liga y Copa, Grand Slam y SS (todos los días)
+#     Actualizar Liga y Copa  → tablas, resultados y sets (lunes y jueves)
+#     Actualizar jugadores    → ratings y fichas de TMT y FETEMBA (jueves)
+# - Al mergear cambios en main: solo arma y publica (no baja datos; sí baja los de un club nuevo).
 # Los datos descargados se guardan en la rama "datos" (no en main): así main tiene solo código.
 
 on:
@@ -24,13 +29,34 @@ on:
         description: "Liga de Equipos y Copa de Clubes (fetembaequipos.ar)"
         type: boolean
         default: true
+      solo_proximos:
+        description: "De Liga y Copa, bajar solo los próximos partidos (rápido; sin tablas ni resultados)"
+        type: boolean
+        default: false
       circuito:
         description: "Grand Slam y Super Series (FETEMBA; solo baja si hay novedades)"
         type: boolean
         default: true
-  schedule:
-    # Una vez por semana, los jueves 09:17 UTC = 06:17 en Argentina. Minuto 17 a propósito: a la hora en punto GitHub se satura y puede saltearse la corrida
-    - cron: "17 9 * * 4"
+  workflow_call:
+    inputs:
+      club:
+        type: string
+        default: ""
+      jugadores:
+        type: boolean
+        default: false
+      calendario:
+        type: boolean
+        default: false
+      equipos:
+        type: boolean
+        default: false
+      solo_proximos:
+        type: boolean
+        default: false
+      circuito:
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths: ["app/**", "clubes/**", "config/**", "scripts/**", ".github/workflows/publicar.yml"]
@@ -40,24 +66,24 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: publicar
-  cancel-in-progress: false
-
 jobs:
   publicar:
     runs-on: ubuntu-latest
+    # Una corrida por vez (todas escriben en la rama "datos" y publican): las demás esperan su turno.
+    concurrency:
+      group: publicar
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     env:
       CLUBES_DATA: ${{ github.workspace }}/.datos
       BAJAR: ${{ github.event_name != 'push' }}
-      # En la corrida automática no hay inputs: se baja todo
-      JUGADORES: ${{ github.event_name == 'schedule' || inputs.jugadores }}
-      CALENDARIO: ${{ github.event_name == 'schedule' || inputs.calendario }}
-      EQUIPOS: ${{ github.event_name == 'schedule' || inputs.equipos }}
-      CIRCUITO: ${{ github.event_name == 'schedule' || inputs.circuito }}
+      JUGADORES: ${{ inputs.jugadores }}
+      CALENDARIO: ${{ inputs.calendario }}
+      EQUIPOS: ${{ inputs.equipos }}
+      SOLO_PROXIMOS: ${{ inputs.solo_proximos }}
+      CIRCUITO: ${{ inputs.circuito }}
       CLUB: ${{ inputs.club }}
     steps:
       - uses: actions/checkout@v7
@@ -90,14 +116,28 @@ jobs:
           [ "$CALENDARIO" = true ] && partes="$partes calendario"
           [ "$JUGADORES" = true ] && partes="$partes jugadores"
           [ "$CIRCUITO" = true ] && partes="$partes circuito"
-          echo "CLUB_ARG=$club_arg" >> "$GITHUB_ENV"
-          echo "PARTES=$partes" >> "$GITHUB_ENV"
+          equipos_arg=""
+          [ "$EQUIPOS" = true ] && [ "$SOLO_PROXIMOS" = true ] && equipos_arg="--solo proximos"
+          # descripción corta para el mensaje del commit de los datos
+          desc=""
+          [ "$CALENDARIO" = true ] && desc="$desc, calendario"
+          if [ "$EQUIPOS" = true ]; then
+            if [ "$SOLO_PROXIMOS" = true ]; then desc="$desc, próximos partidos"; else desc="$desc, Liga y Copa"; fi
+          fi
+          [ "$CIRCUITO" = true ] && desc="$desc, Grand Slam y SS"
+          [ "$JUGADORES" = true ] && desc="$desc, jugadores"
+          {
+            echo "CLUB_ARG=$club_arg"
+            echo "PARTES=$partes"
+            echo "EQUIPOS_ARG=$equipos_arg"
+            echo "DESC=${desc#, }"
+          } >> "$GITHUB_ENV"
           {
             echo "### Actualizar y publicar ($GITHUB_EVENT_NAME)"
             if [ "$BAJAR" = true ]; then
               echo "- Clubes: ${CLUB:-todos}"
               echo "- TMT / FETEMBA:${partes:- (nada)}"
-              echo "- Liga y Copa: $([ "$EQUIPOS" = true ] && echo sí || echo no)"
+              echo "- Liga y Copa: $([ "$EQUIPOS" = true ] && { [ "$SOLO_PROXIMOS" = true ] && echo 'solo próximos partidos' || echo 'todo'; } || echo no)"
             else
               echo "- Cambio en main: solo se arma y publica el sitio (no se bajan datos)."
             fi
@@ -127,7 +167,7 @@ jobs:
       - name: Bajar Liga de Equipos y Copa de Clubes
         if: env.BAJAR == 'true' && env.EQUIPOS == 'true'
         continue-on-error: true
-        run: python scripts/equipos.py $CLUB_ARG
+        run: python scripts/equipos.py $CLUB_ARG $EQUIPOS_ARG
 
       - name: Guardar los datos (rama datos)
         if: env.BAJAR == 'true' || env.NUEVOS != ''
@@ -139,7 +179,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "Datos sin cambios" | tee -a "$GITHUB_STEP_SUMMARY"
           else
-            git commit -q -m "Datos: ${CLUB:-todos los clubes} ($(date -u +%Y-%m-%d))"
+            git commit -q -m "Datos (${DESC:-clubes nuevos}): ${CLUB:-todos los clubes} ($(date -u +%Y-%m-%d))"
             git push -q origin HEAD:datos
             echo "Datos guardados en la rama datos" | tee -a "$GITHUB_STEP_SUMMARY"
           fi

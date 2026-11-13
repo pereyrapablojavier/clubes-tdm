@@ -1,0 +1,34 @@
+name: Actualizar calendarios
+
+# Todos los días a las 06:17 (Argentina). Baja, para todos los clubes activos:
+#   - el calendario de torneos del club (TMT: próximos y podios de los jugados)
+#   - los próximos partidos de Liga de Equipos y Copa de Clubes (FETEMBA Equipos; sin tablas ni resultados)
+#   - Grand Slam y Super Series (FETEMBA; solo baja todo si hay novedades)
+# Es liviana (unos 30 segundos). Después arma el sitio y lo publica.
+# A mano: Actions → "Actualizar calendarios" → Run workflow (se puede elegir un club).
+
+on:
+  schedule:
+    # 09:17 UTC = 06:17 en Argentina. Minuto 17 a propósito: a la hora en punto GitHub se satura y puede saltearse la corrida
+    - cron: "17 9 * * *"
+  workflow_dispatch:
+    inputs:
+      club:
+        description: "Club (slug, por ejemplo spin-tdm). Vacío = todos"
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  actualizar:
+    uses: ./.github/workflows/publicar.yml
+    with:
+      club: ${{ inputs.club }}
+      calendario: true
+      equipos: true
+      solo_proximos: true
+      circuito: true

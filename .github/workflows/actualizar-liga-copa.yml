@@ -1,0 +1,29 @@
+name: Actualizar Liga y Copa
+
+# Lunes y jueves a las 07:17 (Argentina). Baja, para todos los clubes activos, la Liga de Equipos y la Copa de Clubes
+# completas (FETEMBA Equipos): tablas de posiciones, encuentros con sus partidos y sets, y próximos partidos.
+# Tarda unos 30 segundos. Después arma el sitio y lo publica.
+# A mano: Actions → "Actualizar Liga y Copa" → Run workflow (se puede elegir un club).
+
+on:
+  schedule:
+    # 10:17 UTC = 07:17 en Argentina (minuto 17: a la hora en punto GitHub se satura)
+    - cron: "17 10 * * 1,4"
+  workflow_dispatch:
+    inputs:
+      club:
+        description: "Club (slug, por ejemplo spin-tdm). Vacío = todos"
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  actualizar:
+    uses: ./.github/workflows/publicar.yml
+    with:
+      club: ${{ inputs.club }}
+      equipos: true

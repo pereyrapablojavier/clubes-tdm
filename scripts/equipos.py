@@ -6,6 +6,7 @@ de clubes/<slug>/club.json -> fetemba.equipos. Genera data/<slug>/eq_raw.json.
 
 Uso:  python scripts/equipos.py                  # todos los clubes
       python scripts/equipos.py --club spin-tdm  # uno solo
+      python scripts/equipos.py --solo proximos  # solo los próximos partidos (rápido: unos segundos)
 """
 import argparse
 import html as htmlmod
@@ -222,6 +223,46 @@ def discover(lw, snaps):
     return (sorted(set(liga)) or LIGA_FALLBACK), (sorted(set(copa)) or COPA_FALLBACK)
 
 
+def fetch_proximos(lw):
+    """Próximos partidos del club en Liga y Copa (fetembaequipos.ar/proximos-partidos).
+    Devuelve la lista, o None si no se pudo leer."""
+    try:
+        ps = snapshots(lw.page("/proximos-partidos"))
+        v5 = next(s for s in ps if s["memo"]["name"] == "comppublicos.visor5")
+        snap, _ = lw.call(v5, [{"path": "", "method": "__dispatch",
+                                "params": ["setear-filtros-select2", {"filtros": {"tipo_de_torneo": 0, "id_categoria": 0, "id_club": 0}}]}])
+        d = unwrap(snap["data"]) if snap else {}
+        out = []
+        for tipo, key in (("liga", "lstPartidos1"), ("copa", "lstPartidos2")):
+            for p in d.get(key) or []:
+                if is_spin(p.get("club_local")) or is_spin(p.get("club_visitante")):
+                    out.append({"tipo": tipo, **p})
+        return out
+    except Exception as e:  # noqa
+        print("Próximos partidos no disponibles:", e)
+        return None
+
+
+def scrape_proximos():
+    """Solo los próximos partidos: se actualizan en el eq_raw.json que ya está, sin tocar tablas ni resultados."""
+    path = DATA / "eq_raw.json"
+    if not path.exists():
+        print("FETEMBA Equipos: todavía no hay datos completos de este club; se baja todo.")
+        return scrape_club()
+    try:
+        raw = json.loads(path.read_text())
+    except ValueError:
+        print("FETEMBA Equipos: datos anteriores ilegibles; se baja todo.")
+        return scrape_club()
+    upcoming = fetch_proximos(Livewire())
+    if upcoming is None:
+        raise RuntimeError("FETEMBA Equipos: no se pudieron leer los próximos partidos; se conservan los anteriores.")
+    raw["upcoming"] = upcoming
+    raw["proximos_updated"] = datetime.now(timezone.utc).isoformat()
+    path.write_text(json.dumps(raw, ensure_ascii=False))
+    print(f"FETEMBA Equipos: {len(upcoming)} próximos partidos")
+
+
 def scrape_club():
     lw = Livewire()
     snaps = snapshots(lw.page("/resultados"))
@@ -269,20 +310,15 @@ def scrape_club():
     with ThreadPoolExecutor(3) as ex:
         sets = {str(k): v for k, v in ex.map(sets_of, spin_snaps.items()) if v}
 
-    # próximos partidos
-    upcoming = []
-    try:
-        ps = snapshots(lw.page("/proximos-partidos"))
-        v5 = next(s for s in ps if s["memo"]["name"] == "comppublicos.visor5")
-        snap, _ = lw.call(v5, [{"path": "", "method": "__dispatch",
-                                "params": ["setear-filtros-select2", {"filtros": {"tipo_de_torneo": 0, "id_categoria": 0, "id_club": 0}}]}])
-        d = unwrap(snap["data"]) if snap else {}
-        for tipo, key in (("liga", "lstPartidos1"), ("copa", "lstPartidos2")):
-            for p in d.get(key) or []:
-                if is_spin(p.get("club_local")) or is_spin(p.get("club_visitante")):
-                    upcoming.append({"tipo": tipo, **p})
-    except Exception as e:  # noqa
-        print("Próximos partidos no disponibles:", e)
+    # próximos partidos (si no se pueden leer, se conservan los de la descarga anterior)
+    upcoming = fetch_proximos(lw)
+    if upcoming is None:
+        upcoming = []
+        if path.exists():
+            try:
+                upcoming = json.loads(path.read_text()).get("upcoming") or []
+            except ValueError:
+                pass
 
     path.write_text(json.dumps({"updated": datetime.now(timezone.utc).isoformat(), "zones": zones,
                                 "playoff": loose, "sets": sets, "upcoming": upcoming}, ensure_ascii=False))
@@ -292,15 +328,18 @@ def scrape_club():
 def main():
     ap = argparse.ArgumentParser(description="Liga de Equipos y Copa de Clubes de cada club (fetembaequipos.ar).")
     clubcfg.add_club_arg(ap)
+    ap.add_argument("--solo", choices=["todo", "proximos"], default="todo",
+                    help="'proximos': solo los próximos partidos (rápido); 'todo' (por defecto): tablas, resultados y próximos")
+    args = ap.parse_args()
     fallas = []
-    for cfg in clubcfg.selected(ap.parse_args()):
+    for cfg in clubcfg.selected(args):
         print(f"== {cfg['nombre']} ({cfg['slug']})")
         if not cfg["fetemba"].get("equipos"):
             print("FETEMBA Equipos: el club no tiene configurado el nombre de sus equipos.")
             continue
         configure(cfg)
         try:
-            scrape_club()
+            scrape_proximos() if args.solo == "proximos" else scrape_club()
         except Exception as e:  # noqa
             print(e, file=sys.stderr)
             fallas.append(cfg["slug"])

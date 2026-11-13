@@ -321,6 +321,28 @@ def render(template, values):
     return re.sub(r"\{\{(\w+)\}\}", sub, template)
 
 
+def og_meta(titulo, descripcion, url, imagen, con_medidas=True):
+    """Etiquetas Open Graph / Twitter: son las que usan WhatsApp, Telegram, Facebook, etc. para armar la vista previa al
+    compartir un link (título, descripción e imagen). Necesitan direcciones completas (config/sitio.json -> url y base)."""
+    e = lambda x: html.escape(str(x or ""), quote=True)  # noqa: E731
+    sitio = clubcfg.sitio()
+    medidas = '\n  <meta property="og:image:width" content="1200">\n  <meta property="og:image:height" content="630">' if con_medidas else ""
+    return (f'<meta property="og:type" content="website">\n  <meta property="og:site_name" content="{e(sitio.get("nombre"))}">'
+            f'\n  <meta property="og:locale" content="es_AR">\n  <meta property="og:title" content="{e(titulo)}">'
+            f'\n  <meta property="og:description" content="{e(descripcion)}">\n  <meta property="og:url" content="{e(url)}">'
+            f'\n  <meta property="og:image" content="{e(imagen)}">{medidas}'
+            f'\n  <meta name="twitter:card" content="summary_large_image">\n  <meta name="twitter:title" content="{e(titulo)}">'
+            f'\n  <meta name="twitter:description" content="{e(descripcion)}">\n  <meta name="twitter:image" content="{e(imagen)}">')
+
+
+def base_url():
+    """Dirección pública del sitio (con la carpeta donde está publicado), terminada en '/'. Vacía si no está configurada."""
+    s = clubcfg.sitio()
+    if not s.get("url"):
+        return ""
+    return s["url"].rstrip("/") + "/" + (s.get("base") or "/").strip("/") + ("/" if (s.get("base") or "/").strip("/") else "")
+
+
 def actualizaciones(tmt, fet):
     """Cuándo se actualizó cada parte de los datos (fechas ISO en UTC). Como cada parte tiene su propia Action y su horario,
     el pie del sitio muestra cada fecha por separado."""
@@ -407,6 +429,17 @@ def club_files(cfg):
     return [d / "escudo.png"] + sorted((d / "icons").glob("*.png"))
 
 
+def club_og(cfg, hay_imagen):
+    raiz = base_url()
+    if not raiz:
+        return ""
+    url = f"{raiz}{cfg['slug']}/"
+    imagen = f"{url}assets/og.png" if hay_imagen else f"{url}assets/escudo.png"
+    titulo = f"{cfg['nombre']} · Jugadores y estadísticas"
+    desc = f"{cfg['nombre']}" + (f" ({cfg['zona']})" if cfg.get("zona") else "") + ": plantel, ratings y estadísticas de TMT y FETEMBA."
+    return og_meta(titulo, desc, url, imagen, con_medidas=hay_imagen)
+
+
 def write_app():
     """Copia el sitio (app/) con los datos del club: textos y colores en index.html, manifest, service worker,
     escudo e íconos. La versión (?v=) sale del contenido: cambia sola cuando cambia algo."""
@@ -425,11 +458,15 @@ def write_app():
               "instagram": cfg.get("instagram") or "#/club", "instagram_usuario": cfg.get("instagram_usuario") or "Instagram",
               "anio": sitio.get("anio"), "autor": sitio.get("autor")}
     shutil.copytree(APP / "assets", OUT / "assets")
+    og_png = clubcfg.CLUBES / cfg["slug"] / "og.png"
+    if og_png.exists():
+        shutil.copy(og_png, OUT / "assets" / "og.png")
     shutil.copy(club_files(cfg)[0], OUT / "assets" / "escudo.png")
     (OUT / "assets" / "icons").mkdir(exist_ok=True)
     for f in club_files(cfg)[1:]:
         shutil.copy(f, OUT / "assets" / "icons" / f.name)
-    (OUT / "index.html").write_text(render((APP / "index.html").read_text(), values).replace("<!--analitica-->", analitica(True)).replace("<!--seguinos-->", seguinos(cfg)))
+    (OUT / "index.html").write_text(render((APP / "index.html").read_text(), values).replace("<!--analitica-->", analitica(True)).replace("<!--seguinos-->", seguinos(cfg))
+                                        .replace("<!--og-->", club_og(cfg, og_png.exists())))
     (OUT / "sw.js").write_text(render((APP / "sw.js").read_text(), values))
     manifest = {
         "name": cfg["nombre"], "short_name": values["app_corto"],
@@ -543,6 +580,13 @@ def write_portada(cfgs):
            f'no nos pertenecen y este sitio no es oficial de esas organizaciones. Los escudos pertenecen a cada club.<br>'
            f'© {e(sitio.get("anio"))} {e(sitio.get("autor"))}.')
 
+    raiz = base_url()
+    hay_og = (clubcfg.ROOT / "config" / "og.png").exists()
+    if hay_og:
+        shutil.copy(clubcfg.ROOT / "config" / "og.png", SITE / "og.png")
+    og = (og_meta(sitio.get("nombre"), "Plantel, ratings y estadísticas de cada club de tenis de mesa, con datos de TMT y FETEMBA.", raiz,
+                  raiz + "og.png", con_medidas=True) if raiz and hay_og else "")
+
     def page(title, head, body):
         return f"""<!doctype html>
 <html lang="es">
@@ -552,6 +596,7 @@ def write_portada(cfgs):
   <title>{e(title)}</title>
   <meta name="description" content="Plantel, ratings y estadísticas de clubes de tenis de mesa (TMT y FETEMBA).">
   <meta name="theme-color" content="#0E1B2A">
+  {og}
   {FONTS}
   <style>{PORTADA_CSS}</style>
   {analitica(False)}

@@ -257,6 +257,12 @@ def build():
         "players": summary,
     }
 
+    # entrenadores enlazados a un jugador que ya no está en el sitio: se muestran sin link (y se avisa)
+    for e in club["entrenadores"]:
+        if e.get("jugador") and e["jugador"] not in players:
+            print(f"AVISO: el entrenador {e['nombre']} apunta al jugador {e['jugador']}, que no está en el sitio; se muestra sin link.")
+            e.pop("jugador")
+
     calendar = build_calendar(players)
     equipos = build_equipos(players)
     circuito = build_circuito(players, fet)
@@ -318,7 +324,8 @@ IG_RE = re.compile(r"^https://(www\.)?instagram\.com/[A-Za-z0-9._/-]+/?$")
 
 
 def entrenadores(cfg):
-    """Entrenadores del club: cada uno es un texto o {"nombre": ..., "instagram": "https://www.instagram.com/..."}."""
+    """Entrenadores del club: cada uno es un texto o {"nombre": ..., "instagram": "https://www.instagram.com/...",
+    "jugador": "<id del jugador en el sitio>"} (con "jugador", el nombre lleva a su ficha)."""
     out = []
     for e in cfg.get("entrenadores") or []:
         if isinstance(e, str):
@@ -328,7 +335,9 @@ def entrenadores(cfg):
             raise SystemExit(f"{cfg['slug']}: cada entrenador necesita un nombre (es {e!r})")
         if e.get("instagram") and not IG_RE.match(e["instagram"]):
             raise SystemExit(f"{cfg['slug']}: instagram de {e['nombre']} inválido: {e['instagram']!r} (https://www.instagram.com/usuario/)")
-        out.append({k: e[k] for k in ("nombre", "instagram") if e.get(k)})
+        if e.get("jugador") and not re.match(r"^[A-Za-z0-9]+$", str(e["jugador"])):
+            raise SystemExit(f"{cfg['slug']}: el jugador de {e['nombre']} debe ser un id del sitio (letras y números, es {e['jugador']!r})")
+        out.append({k: str(e[k]) for k in ("nombre", "instagram", "jugador") if e.get(k)})
     return out
 
 

@@ -454,7 +454,7 @@
           ${c.instalaciones ? `<p class="small muted">${esc(c.instalaciones)}</p>` : ""}${c.como_llegar ? `<p class="small muted">${esc(c.como_llegar)}</p>` : ""}</div>
         ${(c.horarios_sedes || []).map((h) => `<div class="card"><h3>🕒 ${esc(h.titulo)}</h3><p style="white-space:pre-line;margin:0">${esc(h.texto)}</p>${(h.notas || []).map((n) => `<p class="small muted">${esc(n)}</p>`).join("")}</div>`).join("")}
         <div class="card"><h3>👥 Entrenadores</h3><ul class="list">${c.entrenadores.map((e) => { const o = typeof e === "string" ? { nombre: e } : e; const ig = /^https:\/\//.test(o.instagram || "") ? o.instagram : "";
-          return `<li><span>${esc(o.nombre)}</span>${ig ? `<a class="ig" href="${esc(ig)}" target="_blank" rel="noopener" aria-label="Instagram de ${esc(o.nombre)}" title="Instagram de ${esc(o.nombre)}">${IG_ICON}</a>` : ""}</li>`; }).join("")}</ul>
+          return `<li><span>${o.jugador && byId(o.jugador) ? plink(o.jugador, o.nombre) : esc(o.nombre)}</span>${ig ? `<a class="ig" href="${esc(ig)}" target="_blank" rel="noopener" aria-label="Instagram de ${esc(o.nombre)}" title="Instagram de ${esc(o.nombre)}">${IG_ICON}</a>` : ""}</li>`; }).join("")}</ul>
           <p class="small muted">Club en <a target="_blank" rel="noopener" href="${TMT}/clubes_ampliar.asp?codigo=${c.tmt_code}">TMT ↗</a> y en <a target="_blank" rel="noopener" href="${FET}/clubes">FETEMBA ↗</a>.</p></div>
       </div>
       <div class="note section">Las estadísticas se toman automáticamente de los sitios públicos de TMT y FETEMBA. Algunos jugadores del club están federados en FETEMBA por otra institución; en su ficha se indica el club con el que figuran.</div>

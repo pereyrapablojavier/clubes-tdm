@@ -63,6 +63,9 @@
     }
   ],
   "horarios_titulo": "Horarios · Sede Villa Crespo",
+  "horarios": "Lunes: 17:30 a 19:00 (Escuelita de Menores), 17:00 a 23:00\nMartes: 11:00 a 13:00, 16:00 a 20:00\nMiércoles: 11:00 a 13:00, 21:00 a 23:00\nJueves: 11:00 a 13:00, 17:00 a 23:00 (Escuelita de Menores de 17:30 a 19hs)\nViernes: 16:00 a 18:00\nSábado: 10:00 a 21:00",
+  "instalaciones": "Cancha de pelota paleta techada · El club se encuentra dentro de la Asociación Benito Nazar, nos ubicamos en el primer piso. Contamos con rampa de acceso para personas con movilidad reducida.",
+  "como_llegar": "Estamos rodeados de múltiples líneas de colectivos que te acercan y a pocas cuadras de las líneas de subtes.",
   "entrenadores": [
     {
       "nombre": "Darío Neira",

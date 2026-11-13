@@ -233,6 +233,7 @@ def build():
     fd = fet_club.get("datos") or {}
     club = {
         "updated": tmt.get("updated"), "fet_updated": fet.get("updated"),
+        "actualizaciones": actualizaciones(tmt, fet),
         "nombre": CFG["nombre"], "sigla": CFG["tmt"].get("sigla"),
         "tmt_code": tmt["club"]["code"], "tmt_rank": tmt["club"].get("rank"), "fet_id": fet_club.get("id"),
         "direccion": fd.get("direccion"), "localidad": fd.get("localidad"), "horarios": CFG.get("horarios") or fd.get("horarios"),
@@ -318,6 +319,19 @@ def render(template, values):
             raise SystemExit(f"Falta el valor de {{{{{m.group(1)}}}}} en la plantilla")
         return html.escape(str(values[m.group(1)]), quote=True)
     return re.sub(r"\{\{(\w+)\}\}", sub, template)
+
+
+def actualizaciones(tmt, fet):
+    """Cuándo se actualizó cada parte de los datos (fechas ISO en UTC). Como cada parte tiene su propia Action y su horario,
+    el pie del sitio muestra cada fecha por separado."""
+    eq = read_json(DATA / "eq_raw.json", {})
+    cal = read_json(DATA / "cal_raw.json", {})
+    tor = read_json(clubcfg.data_root() / "fetemba_torneos.json", {})
+    circ = [x for x in (fet.get("circ_checked") or fet.get("circ_updated"), tor.get("updated")) if x]
+    out = {"jugadores": tmt.get("updated"), "calendario": cal.get("updated"),
+           "proximos": eq.get("proximos_updated") or eq.get("updated"), "liga_copa": eq.get("updated"),
+           "circuito": max(circ) if circ else None}
+    return {k: v for k, v in out.items() if v}
 
 
 IG_RE = re.compile(r"^https://(www\.)?instagram\.com/[A-Za-z0-9._/-]+/?$")

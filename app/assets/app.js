@@ -945,8 +945,17 @@
     CLUB = c;
     setContactLinks();
     if (c.sitio && c.sitio.clubes > 1) document.getElementById("otrosClubes").hidden = false;
+    // pie: cuándo se actualizó cada parte de los datos (cada una tiene su propia Action y su horario); con el cursor encima, fecha y hora completas
+    const TZ = "America/Argentina/Buenos_Aires";
+    const diaAR = (x) => x.toLocaleDateString("sv-SE", { timeZone: TZ });
+    const cuando = (iso) => { const x = new Date(iso); if (isNaN(x)) return ""; const k = diaAR(x);
+      return k === diaAR(new Date()) ? "hoy" : k === diaAR(new Date(Date.now() - 864e5)) ? "ayer" : x.toLocaleDateString("es-AR", { timeZone: TZ, day: "numeric", month: "numeric" }); };
+    const ACT = [["jugadores", "Jugadores"], ["calendario", "Calendario"], ["proximos", "Próximos partidos"], ["liga_copa", "Liga y Copa"], ["circuito", "Grand Slam y SS"]];
+    const act = c.actualizaciones || {};
+    const partes = ACT.filter(([k]) => act[k] && cuando(act[k])).map(([k, n]) => `<span title="${esc(new Date(act[k]).toLocaleString("es-AR", { timeZone: TZ, dateStyle: "short", timeStyle: "short" }))}">${n}: ${cuando(act[k])}</span>`);
     const d = c.updated ? new Date(c.updated) : null;
-    document.getElementById("updated").textContent = d ? `Última actualización: ${d.toLocaleDateString("es-AR")} ${d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}` : "";
+    document.getElementById("updated").innerHTML = partes.length ? `Datos actualizados · ${partes.join(" · ")}`
+      : d ? `Última actualización: ${esc(d.toLocaleDateString("es-AR"))} ${esc(d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }))}` : "";
     window.addEventListener("hashchange", route);
     route();
   }).catch(() => { $app.innerHTML = `<div class="loading">No se pudieron cargar los datos.</div>`; });

@@ -85,7 +85,7 @@ jobs:
       cancel-in-progress: false
     environment:
       name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+      url: ${{ steps.deploy3.outputs.page_url || steps.deploy2.outputs.page_url || steps.deploy.outputs.page_url }}
     env:
       CLUBES_DATA: ${{ github.workspace }}/.datos
       BAJAR: ${{ github.event_name != 'push' }}
@@ -210,6 +210,33 @@ jobs:
       - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
+
+      # La entrega final a GitHub Pages a veces falla por problemas pasajeros de GitHub (error 502, o "no se encontró el artefacto"
+      # recién subido). Se intenta hasta 3 veces, con una espera entre cada una; recién si fallan las 3, la corrida falla.
       - name: Publicar en GitHub Pages
         id: deploy
+        uses: actions/deploy-pages@v5
+        continue-on-error: true
+
+      - name: Esperar antes de reintentar (falla pasajera de GitHub)
+        if: steps.deploy.outcome == 'failure'
+        run: |
+          echo "::warning::La publicación falló (suele ser un problema pasajero de GitHub); se reintenta en 30 s."
+          echo "- ⚠️ La publicación falló y se reintentó (intento 2 de 3)." >> "$GITHUB_STEP_SUMMARY"
+          sleep 30
+      - name: Publicar en GitHub Pages (intento 2)
+        id: deploy2
+        if: steps.deploy.outcome == 'failure'
+        uses: actions/deploy-pages@v5
+        continue-on-error: true
+
+      - name: Esperar antes del último intento
+        if: steps.deploy.outcome == 'failure' && steps.deploy2.outcome == 'failure'
+        run: |
+          echo "::warning::La publicación volvió a fallar; último intento en 60 s."
+          echo "- ⚠️ La publicación volvió a fallar (intento 3 de 3)." >> "$GITHUB_STEP_SUMMARY"
+          sleep 60
+      - name: Publicar en GitHub Pages (intento 3)
+        id: deploy3
+        if: steps.deploy.outcome == 'failure' && steps.deploy2.outcome == 'failure'
         uses: actions/deploy-pages@v5

@@ -19,10 +19,37 @@ ROOT = Path(__file__).resolve().parent.parent
 MAX_TIDS = 60  # cuántos torneos recordar por jugador
 
 
+def seguidos(slug):
+    """Códigos que se siguen: la lista "seguir" de club.json más los que se sumaron con la Action "Seguir jugadores"
+    (datos/<slug>/seguir.json: {"agregar": [...], "quitar": [...]}), menos los que se quitaron."""
+    extra = clubcfg.data_root() / slug / "seguir.json"
+    e = json.loads(extra.read_text()) if extra.exists() else {}
+    base = [str(i) for i in (clubcfg.load(slug).get("seguir") or [])]
+    ids = base + [str(i) for i in e.get("agregar", []) if str(i) not in base]
+    return [i for i in ids if i not in {str(q) for q in e.get("quitar", [])}]
+
+
+def ficha(p):
+    """Resumen de un jugador (HTML de Telegram): categoría, rating, posiciones, racha y últimos torneos."""
+    esc = telegram.esc
+    t = p["tmt"]
+    tot, form = t["tot"], t.get("form") or []
+    L = [f"<b>{esc(nombre(p['name']))}</b> · {esc(t.get('cat') or '')} · rating {t['rating']}"]
+    L.append(f"Puesto {t['clubPos']} en el club · {t['rankPos']} en el ranking general")
+    if tot.get("partidos"):
+        L.append(f"Historial: {tot['ganados']} ganados de {tot['partidos']} partidos ({round(100 * tot['ganados'] / tot['partidos'])}%) en {tot['torneos']} torneos")
+    if form:
+        L.append("Últimos partidos: " + " ".join("✅" if x == "G" else "❌" for x in form))
+    for x in sorted(t.get("tours", []), key=lambda x: x["date"], reverse=True)[:3]:
+        v = f", {'+' if x['var'] > 0 else ''}{x['var']}" if x.get("var") else ""
+        L.append(f"• {dm(x['date'])} · {esc(x['name'])}: {x['w']}-{x['l']}{v}")
+    return "\n".join(L)
+
+
 def novedades(slug, estado, base=None):
     """Devuelve (renglones del mensaje, estado nuevo, jugadores recién registrados). No toca disco."""
     cfg = clubcfg.load(slug)
-    ids = [str(i) for i in (cfg.get("seguir") or [])]
+    ids = seguidos(slug)
     base = base or ROOT / "_site" / slug / "data"
     players = json.loads((base / "players.json").read_text())
     cal = json.loads((base / "calendar.json").read_text()) if (base / "calendar.json").exists() else {}
@@ -74,10 +101,24 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--club", action="append")
     ap.add_argument("--no-enviar", action="store_true")
+    ap.add_argument("--resumen", nargs="?", const="todos", metavar="IDS",
+                    help="manda el resumen actual de los jugadores seguidos (o de los códigos dados, separados por coma) y sale")
     a = ap.parse_args()
     fallo = False
+    if a.resumen:
+        for slug in a.club or clubcfg.slugs():
+            players = json.loads((ROOT / "_site" / slug / "data" / "players.json").read_text())
+            ids = seguidos(slug) if a.resumen == "todos" else [x.strip() for x in a.resumen.replace(";", ",").replace(" ", ",").split(",") if x.strip()]
+            fichas = [ficha(players[i]) for i in ids if i in players and players[i].get("tmt")]
+            if not fichas:
+                continue
+            m = f"📋 <b>Resumen de jugadores · {telegram.esc(clubcfg.load(slug)['nombre'])}</b>\n\n" + "\n\n".join(fichas)
+            print(m, "\n")
+            if not a.no_enviar and telegram.enviar(m) is False:
+                fallo = True
+        raise SystemExit(1 if fallo else 0)
     for slug in a.club or clubcfg.slugs():
-        if not clubcfg.load(slug).get("seguir"):
+        if not seguidos(slug):
             continue
         archivo = clubcfg.data_root() / slug / "novedades.json"
         estado = json.loads(archivo.read_text()) if archivo.exists() else {}

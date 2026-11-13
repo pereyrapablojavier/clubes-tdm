@@ -211,6 +211,31 @@ jobs:
       - name: Armar el sitio
         run: python scripts/build.py | tee -a "$GITHUB_STEP_SUMMARY"
 
+      - name: Avisos de jugadores seguidos (Telegram)
+        # Avisa por Telegram lo nuevo de los jugadores de "seguir" (club.json) y guarda lo avisado en la rama datos.
+        # Sin Telegram configurado no hace nada. Si falla no impide publicar.
+        if: env.BAJAR == 'true'
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "Telegram no está configurado: no se avisa."; exit 0
+          fi
+          python scripts/novedades.py ${CLUB:+--club "$CLUB"}
+          cd "$CLUBES_DATA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -q -m "Novedades avisadas ($(date -u +%Y-%m-%d))"
+            for i in 1 2 3; do
+              git push -q origin HEAD:datos && break
+              git fetch -q origin datos && git rebase -q FETCH_HEAD || break
+            done
+          fi
+
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:

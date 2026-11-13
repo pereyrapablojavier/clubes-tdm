@@ -69,6 +69,15 @@ Las dos cosas usan un bot de Telegram. Configuración (una sola vez):
 - El mensaje trae un link **📲 Compartir por WhatsApp**: al tocarlo se abre WhatsApp con el resumen ya escrito para elegir el grupo (también está en el resumen de la corrida).
 - Sin los secrets no pasa nada: no se manda nada y el sitio funciona igual. Probar: `python scripts/resumen.py --no-enviar`.
 
+## Avisos de jugadores en particular (Telegram)
+
+En `clubes/<slug>/club.json`, la lista `"seguir"` tiene los códigos TMT de los jugadores a seguir (el código está en la URL de su ficha en el sitio).
+Después de cada actualización, el sistema avisa por Telegram, una sola vez cada cosa: torneos nuevos (partidos ganados/perdidos y
+cambio de rating), podios en torneos del club y cambios de categoría. Lo ya avisado se guarda en `datos/<slug>/novedades.json`.
+Cuando se suma un jugador a la lista, la primera vez solo se lo registra (no avisa su historial) y manda "Ahora seguimos a…".
+Los avisos llegan al ritmo de las actualizaciones (jugadores: jueves). Probar: `python scripts/novedades.py --no-enviar`.
+Son datos públicos de TMT; ojo con el chat de destino si el jugador es menor.
+
 ## Vista previa al compartir (WhatsApp, Telegram…)
 
 Cada club tiene `clubes/<slug>/og.png` (1200x630) y la portada `config/og.png`. Se generan con

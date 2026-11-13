@@ -1,0 +1,50 @@
+name: Resumen semanal
+
+# Los lunes a las 09:17 (Argentina) manda por Telegram el resumen de la semana de cada club (torneos, quién subió y bajó de
+# rating, podios y próximos torneos), listo para reenviar al grupo. También queda en el resumen de la corrida.
+# A mano: Actions → "Resumen semanal" → Run workflow (se puede elegir un club y cuántos días mirar atrás).
+# No publica nada ni toca los datos. Si Telegram no está configurado, solo lo muestra en el resumen de la corrida.
+
+on:
+  schedule:
+    # 12:17 UTC = 09:17 en Argentina
+    - cron: "17 12 * * 1"
+  workflow_dispatch:
+    inputs:
+      club:
+        description: "Club (slug). Vacío = todos"
+        type: string
+        default: ""
+      dias:
+        description: "Cuántos días hacia atrás mirar"
+        type: string
+        default: "7"
+
+permissions:
+  contents: read
+
+jobs:
+  resumen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CLUBES_DATA: ${{ github.workspace }}/.datos
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Traer los datos guardados (rama datos)
+        run: |
+          git fetch --depth 1 origin datos
+          git worktree add "$CLUBES_DATA" FETCH_HEAD
+      - name: Armar el sitio (solo para leer los datos)
+        run: python scripts/build.py
+      - name: Resumen
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          CLUB: ${{ inputs.club }}
+          DIAS: ${{ inputs.dias }}
+        run: python scripts/resumen.py ${CLUB:+--club "$CLUB"} --dias "${DIAS:-7}"

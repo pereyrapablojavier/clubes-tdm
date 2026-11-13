@@ -56,6 +56,18 @@ Para que publique, en el repo: **Settings → Pages → Build and deployment →
 - El pie de cada club muestra la fecha de cada parte (jugadores, calendario, próximos partidos, Liga/Copa y Grand Slam/Super Series).
 - En Grand Slam y Super Series se muestran también los próximos torneos de FETEMBA (fechas e inscripción).
 
+## Telegram: avisos de falla y resumen semanal
+
+Las dos cosas usan un bot de Telegram. Configuración (una sola vez):
+1. En Telegram, hablá con **@BotFather** → `/newbot` → te da el **token**.
+2. Escribile algo al bot (o agregalo al grupo donde quieras los mensajes) y abrí `https://api.telegram.org/bot<TOKEN>/getUpdates`: ahí aparece el **chat id** (`"chat":{"id":…}`; los grupos tienen id negativo).
+3. En el repo: Settings → Secrets and variables → Actions → *New repository secret*: `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID`.
+
+- **Aviso de falla**: si una actualización o la publicación falla, llega un mensaje con el link a la corrida (además del mail de GitHub).
+- **Resumen semanal** (`resumen-semanal.yml`, lunes 09:17): torneos de la semana, quién más subió y bajó de rating, podios del club y próximos
+  torneos. También queda en el resumen de la corrida. A mano: Actions → "Resumen semanal" (admite un club y cuántos días mirar).
+- Sin los secrets no pasa nada: no se manda nada y el sitio funciona igual. Probar: `python scripts/resumen.py --no-enviar`.
+
 ## Vista previa al compartir (WhatsApp, Telegram…)
 
 Cada club tiene `clubes/<slug>/og.png` (1200x630) y la portada `config/og.png`. Se generan con

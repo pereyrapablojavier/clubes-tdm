@@ -24,6 +24,7 @@ permissions:
 jobs:
   actualizar:
     uses: ./.github/workflows/publicar.yml
+    secrets: inherit  # para el aviso por Telegram
     with:
       club: ${{ inputs.club }}
       jugadores: true

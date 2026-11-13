@@ -32,6 +32,7 @@ permissions:
 jobs:
   mantenimiento:
     uses: ./.github/workflows/publicar.yml
+    secrets: inherit  # para el aviso por Telegram
     with:
       mantenimiento: ${{ inputs.accion }}
       mensaje: ${{ inputs.mensaje }}

@@ -18,6 +18,7 @@ from datetime import datetime
 from pathlib import Path
 
 import clubcfg
+import mantenimiento
 
 ROOT = Path(__file__).resolve().parent.parent
 APP = ROOT / "app"
@@ -446,6 +447,63 @@ FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="
          '<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">')
 
 
+MANT_CSS = """
+    main { min-height: 100vh; display: grid; place-content: center; text-align: center; padding: 32px 20px; }
+    .ico { font-size: 56px; line-height: 1; margin-bottom: 14px; }
+    main h1 { margin-bottom: 12px; }
+    main p { color: var(--gris); max-width: 520px; margin: 0 auto 10px; font-size: 17px; }
+    main p.msg { color: var(--tinta); font-weight: 600; background: var(--card); border: 1px solid var(--linea); border-radius: 12px; padding: 12px 16px; }
+    main small { color: var(--gris); display: block; margin-top: 22px; }
+"""
+
+
+def write_mantenimiento(est, cfgs):
+    """Modo mantenimiento: en vez del sitio se publica la página 'Sitio en construcción' (portada, 404 y la dirección de cada club,
+    así los links y las apps instaladas también la muestran). Se ve igual en todas partes y no la indexan los buscadores."""
+    sitio = clubcfg.sitio()
+    e = lambda x: html.escape(str(x or ""), quote=True)  # noqa: E731
+    mensaje = " ".join(str(est.get("mensaje") or "").split())[:300]
+    msg = f'<p class="msg">{e(mensaje)}</p>' if mensaje else ""
+    gc = sitio.get("goatcounter")
+    # las visitas a esta página se cuentan aparte (/mantenimiento), para no mezclarlas con las del sitio
+    conteo = ("<script>window.goatcounter = { path: '/mantenimiento' }</script>" + analitica(False)) if gc else ""
+    pagina = f"""<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sitio en construcción · {e(sitio.get("nombre"))}</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0E1B2A">
+  <!-- se vuelve a cargar sola cada 5 minutos: cuando el sitio vuelve, se ve sin hacer nada -->
+  <meta http-equiv="refresh" content="300">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%9B%A0%EF%B8%8F%3C/text%3E%3C/svg%3E">
+  {FONTS}
+  <style>{PORTADA_CSS}{MANT_CSS}</style>
+  {conteo}
+</head>
+<body>
+  <main>
+    <div class="ico" aria-hidden="true">🛠️</div>
+    <h1>Sitio en construcción</h1>
+    <p>Estamos haciendo mejoras en el sitio. Volvemos en un rato.</p>
+    {msg}
+    <small>Volvé a entrar en unos minutos. © {e(sitio.get("anio"))} {e(sitio.get("autor"))}.</small>
+  </main>
+</body>
+</html>
+"""
+    if SITE.exists():
+        shutil.rmtree(SITE)
+    SITE.mkdir()
+    (SITE / ".nojekyll").write_text("")
+    (SITE / "index.html").write_text(pagina)
+    (SITE / "404.html").write_text(pagina)
+    for c in cfgs:
+        (SITE / c["slug"]).mkdir()
+        (SITE / c["slug"] / "index.html").write_text(pagina)
+
+
 def write_portada(cfgs):
     """Portada (_site/index.html) con la lista de clubes, y _site/404.html para direcciones que no existen."""
     sitio = clubcfg.sitio()
@@ -671,6 +729,12 @@ def main():
     ap = argparse.ArgumentParser(description="Arma el sitio de cada club en _site/<slug>/.")
     clubcfg.add_club_arg(ap)
     args = ap.parse_args()
+    est = mantenimiento.leer()
+    if est:
+        write_mantenimiento(est, [clubcfg.load(s) for s in clubcfg.slugs()])
+        print("MODO MANTENIMIENTO ACTIVO: se publica la página 'Sitio en construcción' en vez del sitio"
+              + (f" (mensaje: {est['mensaje']})" if est.get("mensaje") else "") + ".")
+        return
     SITE.mkdir(exist_ok=True)
     (SITE / ".nojekyll").write_text("")
     for cfg in clubcfg.selected(args):

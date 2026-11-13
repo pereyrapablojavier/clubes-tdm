@@ -8,6 +8,8 @@ name: Actualizar y publicar
 #     Actualizar Liga y Copa  → tablas, resultados y sets (lunes y jueves)
 #     Actualizar jugadores    → ratings y fichas de TMT y FETEMBA (jueves)
 # - Al mergear cambios en main: solo arma y publica (no baja datos; sí baja los de un club nuevo).
+# - Modo mantenimiento (Actions → "Modo mantenimiento"): activa o desactiva la página "Sitio en construcción".
+#   El estado se guarda en la rama "datos" y TODAS las publicaciones lo respetan.
 # Los datos descargados se guardan en la rama "datos" (no en main): así main tiene solo código.
 
 on:
@@ -57,6 +59,14 @@ on:
       circuito:
         type: boolean
         default: false
+      mantenimiento:
+        description: "'activar' o 'desactivar' el modo mantenimiento (página Sitio en construcción); vacío = no tocar"
+        type: string
+        default: ""
+      mensaje:
+        description: "Mensaje opcional para la página en construcción"
+        type: string
+        default: ""
   push:
     branches: [main]
     paths: ["app/**", "clubes/**", "config/**", "scripts/**", ".github/workflows/publicar.yml"]
@@ -85,6 +95,8 @@ jobs:
       SOLO_PROXIMOS: ${{ inputs.solo_proximos }}
       CIRCUITO: ${{ inputs.circuito }}
       CLUB: ${{ inputs.club }}
+      MANT: ${{ inputs.mantenimiento }}
+      MENSAJE: ${{ inputs.mensaje }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -126,6 +138,7 @@ jobs:
           fi
           [ "$CIRCUITO" = true ] && desc="$desc, Grand Slam y SS"
           [ "$JUGADORES" = true ] && desc="$desc, jugadores"
+          [ -n "$MANT" ] && desc="$desc, modo mantenimiento ($MANT)"
           {
             echo "CLUB_ARG=$club_arg"
             echo "PARTES=$partes"
@@ -134,6 +147,7 @@ jobs:
           } >> "$GITHUB_ENV"
           {
             echo "### Actualizar y publicar ($GITHUB_EVENT_NAME)"
+            [ -n "$MANT" ] && echo "- Modo mantenimiento: $MANT"
             if [ "$BAJAR" = true ]; then
               echo "- Clubes: ${CLUB:-todos}"
               echo "- TMT / FETEMBA:${partes:- (nada)}"
@@ -142,6 +156,11 @@ jobs:
               echo "- Cambio en main: solo se arma y publica el sitio (no se bajan datos)."
             fi
           } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # El mensaje llega por variable de entorno y entre comillas (no se pega en el comando), así no puede ejecutar nada.
+      - name: Modo mantenimiento
+        if: env.MANT != ''
+        run: python scripts/mantenimiento.py "$MANT" --mensaje "$MENSAJE" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Clubes nuevos (sin datos todavía)
         run: |

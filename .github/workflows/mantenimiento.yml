@@ -1,0 +1,37 @@
+name: Modo mantenimiento
+
+# Pone el sitio "en construcción" (o lo vuelve a poner online).
+#   Actions → "Modo mantenimiento" → Run workflow → elegir "activar" o "desactivar" (y, si querés, un mensaje).
+#
+# Activar: todo el sitio (portada y cada club) pasa a mostrar la página "Sitio en construcción", también en las apps instaladas.
+#   Mientras esté activo, las actualizaciones de datos y los cambios de código SIGUEN funcionando pero publican la
+#   página en construcción, así el sitio no vuelve solo.
+# Desactivar: se vuelve a publicar el sitio normal (con los datos más recientes).
+# Tarda 1 minuto; por la memoria de GitHub Pages y de los navegadores, puede tardar hasta unos 10 minutos en verse en todos lados.
+
+on:
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: "Qué hacer"
+        type: choice
+        options:
+          - activar
+          - desactivar
+        required: true
+      mensaje:
+        description: "Mensaje opcional para la página (por ejemplo: Volvemos el lunes). Se ignora al desactivar"
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  mantenimiento:
+    uses: ./.github/workflows/publicar.yml
+    with:
+      mantenimiento: ${{ inputs.accion }}
+      mensaje: ${{ inputs.mensaje }}

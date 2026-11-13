@@ -49,6 +49,21 @@ Si la rama no existe, la próxima descarga la crea.
 
 Para que publique, en el repo: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 
+## Modo mantenimiento ("Sitio en construcción")
+
+Para sacar el sitio de línea un rato: **Actions → "Modo mantenimiento" → Run workflow → `activar`** (con un mensaje opcional, por ejemplo
+"Volvemos el lunes"). Para volver: lo mismo con **`desactivar`**.
+
+- Con el modo activo, **toda la portada y cada club** (también las apps instaladas y los links a una sección) muestran la página
+  "Sitio en construcción", sin datos ni código del sitio. No la indexan los buscadores y se recarga sola cada 5 minutos.
+- El estado se guarda en la rama `datos` (`mantenimiento.json`) y **lo respetan todas las publicaciones**: las actualizaciones de datos y los
+  cambios de código siguen funcionando, pero publican la página en construcción, así el sitio no vuelve solo. Al desactivar, se publica
+  el sitio con los datos más recientes.
+- Tarda 1 minuto; por la memoria de GitHub Pages y de los navegadores puede tardar hasta unos 10 minutos en verse en todos lados.
+- A mano, en una copia local: `python scripts/mantenimiento.py activar --mensaje "..."` / `desactivar` / `estado`, y después `python scripts/build.py`.
+- Es una página, no un corte real: GitHub Pages responde 200. Para dejarlo realmente apagado: **Settings → Pages → Unpublish site**
+  (eso no está automatizado).
+
 ## Visitas
 
 Las visitas se cuentan con [GoatCounter](https://www.goatcounter.com/) (sin cookies, sin datos personales). El código del panel está en

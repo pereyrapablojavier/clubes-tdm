@@ -256,6 +256,7 @@
           <h1 style="margin-bottom:6px">${esc(niceName(p.name))}</h1>
           <div class="meta">${t ? catBadge(t.cat) : ""} ${f && f.cat ? `<span class="badge fet">FETEMBA ${esc(f.cat)}</span>` : ""} ${srcBadges(p.src)}
             ${f && f.club && !f.spin ? `<span class="small muted">· Federado por ${esc(f.club)}</span>` : ""}</div>
+          ${t || f ? `<div class="small muted codes" style="margin-top:6px">${[t ? `Código TMT: <b class="num">${esc(t.code)}</b>` : "", f ? `ID FETEMBA: <b class="num">${esc(f.id)}</b>` : ""].filter(Boolean).join(" · ")}</div>` : ""}
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           ${t ? `<a class="btn ghost" target="_blank" rel="noopener" href="${TMT}/jugadores_ficha.asp?codigo=${esc(t.code)}">Ficha TMT ↗</a>` : ""}

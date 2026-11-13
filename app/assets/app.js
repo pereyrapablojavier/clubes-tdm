@@ -683,6 +683,32 @@
   const circCats = (q) => q.cats.map(([id, n]) => `<a href="${FET_URL}/historial/categorias/${id}" target="_blank" rel="noopener">${esc(n)}</a>`).join(" · ");
   const circRow = (head, q, extra = "") => `<li><span class="grow"><div>${head}</div><div class="small muted">${extra}${circCats(q)} · <span class="num">${q.g}-${q.p}</span></div></span><span class="small cres">${circRes(q)}</span></li>`;
   const circBadge = (t) => `<span class="badge ${t === "GS" ? "gs" : "ss"}">${CIRC[t]}</span>`;
+  // próximos torneos individuales de FETEMBA (lista general: Súper Series, Grand Slam, Abierto de la República, etc.)
+  const hoyAR = () => new Date().toLocaleDateString("sv-SE", { timeZone: "America/Argentina/Buenos_Aires" });
+  const dm = (iso) => { const [, m, d] = String(iso).slice(0, 10).split("-"); return `${+d}/${+m}`; };
+  const tipoTorneo = (n) => (/grand\s*slam|gslam/i.test(n) ? "GS" : /s[uú]per\s*serie/i.test(n) ? "SS" : "");
+  const rangoFechas = (a, b) => {
+    if (!a) return "Fecha a confirmar";
+    const x = pd(a.slice(0, 10)), y = pd((b || a).slice(0, 10));
+    if (+x === +y) return `${DIAS[x.getDay()]} ${x.getDate()} de ${MESES[x.getMonth()]}`;
+    return x.getMonth() === y.getMonth() ? `${x.getDate()} al ${y.getDate()} de ${MESES[y.getMonth()]}` : `${x.getDate()} de ${MESES[x.getMonth()]} al ${y.getDate()} de ${MESES[y.getMonth()]}`;
+  };
+  const inscripcion = (t) => {
+    if (t.estado !== "ABIERTO") return `<span class="badge">Inscripción cerrada</span>`;
+    if (t.apertura && t.apertura.slice(0, 10) > hoyAR()) return `<span class="badge">Inscripción desde el ${dm(t.apertura)}</span>`;
+    return `<span class="badge ok">Inscripción abierta</span>${t.cierre ? ` <span class="muted">cierra el ${dm(t.cierre)} a las ${t.cierre.slice(11, 16)}</span>` : ""}`;
+  };
+  const proximosTorneosHTML = (C) => {
+    const hoy = hoyAR();
+    const lista = ((C.proximos && C.proximos.torneos) || []).filter((t) => (t.fecha_hasta || t.fecha_desde || "9999").slice(0, 10) >= hoy);
+    return `<div class="card section"><h3>📅 Próximos torneos de FETEMBA</h3>${lista.length ? `<ul class="list">${lista.map((t) => `<li><span class="grow">
+        <div>${tipoTorneo(t.nombre) ? circBadge(tipoTorneo(t.nombre)) + " " : ""}<b>${esc(t.nombre)}</b></div>
+        <div class="small muted">${esc(rangoFechas(t.fecha_desde, t.fecha_hasta))}${t.sede ? " · " + esc(t.sede) : ""}</div>
+        <div class="small" style="margin-top:6px;line-height:1.9">${inscripcion(t)}${t.arancel ? ` <span class="muted">· $${fmt(t.arancel)}</span>` : ""}</div>
+        <div class="small" style="margin-top:4px"><a href="${FET_URL}/torneos/${encodeURIComponent(t.codigo)}" target="_blank" rel="noopener">Ver en FETEMBA ↗</a></div></span></li>`).join("")}</ul>`
+      : `<p class="muted" style="margin:0">No hay torneos anunciados por ahora. Mirá <a href="${FET_URL}/torneos" target="_blank" rel="noopener">FETEMBA ↗</a>.</p>`}</div>`;
+  };
+
   async function viewCircuito() {
     $app.innerHTML = `<div class="loading">Cargando…</div>`;
     let C;
@@ -691,6 +717,8 @@
     if (!years.includes(circState.year)) circState.year = years[0] || null;
     $app.innerHTML = `<div class="section"><h1>Grand Slam y Super Series</h1>
       <p class="muted" style="max-width:720px">Los torneos individuales de FETEMBA: los <b>Grand Slam</b> y las <b>Super Series</b>. Acá están los jugadores del plantel de ${esc(K().corto)} en cada torneo: categoría, partidos y hasta dónde llegaron.</p>
+      ${proximosTorneosHTML(C)}
+      <h2 style="margin-top:28px">Resultados de ${esc(K().corto)}</h2>
       <div class="filters"><select id="ciY">${years.map((y) => `<option>${y}</option>`).join("")}<option value="">Todos los años</option></select></div>
       <div class="chips" id="ciT" style="margin-top:10px">${[["", "Todos"], ["GS", "Grand Slam"], ["SS", "Super Series"]].map(([k, n]) => `<button class="chip" data-t="${k}">${n}</button>`).join("")}</div>
       <div id="ciBody"></div>

@@ -443,9 +443,35 @@ def circ_eventos():
     return out
 
 
+_TORNEOS_HECHO = False
+
+
+def scrape_torneos_fetemba():
+    """Próximos torneos de FETEMBA (/api/publico/torneos): nombre, fechas, sede, estado de la inscripción, cierre y arancel.
+    La lista es general (igual para todos los clubes): se baja una sola vez por corrida a <datos>/fetemba_torneos.json.
+    Devuelve False si FETEMBA no respondió (se conserva el archivo anterior)."""
+    global _TORNEOS_HECHO
+    if _TORNEOS_HECHO:
+        return True
+    _TORNEOS_HECHO = True
+    d = get(f"{FET}/api/publico/torneos", binary=False)
+    if not isinstance(d, list):
+        print("Próximos torneos de FETEMBA: no disponibles; se conservan los anteriores.")
+        return False
+    keep = ("id", "codigo", "nombre", "sede", "fecha_desde", "fecha_hasta", "apertura", "cierre", "arancel", "estado", "abierto")
+    torneos = [{k: t.get(k) for k in keep} for t in d if isinstance(t, dict) and not t.get("en_prueba")]
+    torneos.sort(key=lambda t: (t.get("fecha_desde") or "", t.get("id") or 0))
+    path = clubcfg.data_root() / "fetemba_torneos.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"updated": datetime.now(timezone.utc).isoformat(), "torneos": torneos}, ensure_ascii=False))
+    print(f"Próximos torneos de FETEMBA: {len(torneos)}")
+    return True
+
+
 def scrape_circuito():
     """Grand Slam y Super Series de los jugadores federados. Solo vuelve a bajar todo si FETEMBA cargó
     un torneo nuevo o más partidos de uno existente; los jugadores nuevos se bajan siempre."""
+    scrape_torneos_fetemba()
     path = DATA / "fet_raw.json"
     fet = load_fet_raw()
     recs = list((fet.get("byTmt") or {}).values()) + list((fet.get("fetOnly") or {}).values())

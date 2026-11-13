@@ -310,3 +310,7 @@ details.circ .fecha span { font-size: 10px; letter-spacing: .5px; }
 .list li > .ig { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; flex: 0 0 auto; margin: -6px -6px -6px 12px; border-radius: 10px; }
 .list li > .ig:hover { background: var(--celeste-3); text-decoration: none; }
 .list li > span:first-child { min-width: 0; }
+
+/* estado de la inscripción de un torneo */
+.badge.ok { background: #E3F5EC; color: #146B43; border-color: #BDE5D0; }
+@media (prefers-color-scheme: dark) { .badge.ok { background: #123325; color: #7ED6A8; border-color: #1E5A3F; } }

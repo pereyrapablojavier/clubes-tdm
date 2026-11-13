@@ -607,7 +607,10 @@ def build_circuito(players, fet):
     """Grand Slam y Super Series (FETEMBA): cada torneo con los jugadores del plantel que lo jugaron."""
     by_fet = {str(p["fet"]["id"]): p["id"] for p in players.values() if p.get("fet")}
     recs = list((fet.get("byTmt") or {}).values()) + list((fet.get("fetOnly") or {}).values())
-    if not any("circ" in r for r in recs):
+    # próximos torneos de FETEMBA (lista general, igual para todos los clubes)
+    tor = read_json(clubcfg.data_root() / "fetemba_torneos.json", {})
+    proximos = {"updated": tor.get("updated"), "torneos": tor.get("torneos") or []}
+    if not any("circ" in r for r in recs) and not proximos["torneos"]:
         return None
     ev = {}
     for r in recs:
@@ -619,7 +622,8 @@ def build_circuito(players, fet):
                               "cats": x["cats"], "g": x["g"], "p": x["p"], "pu": x["pu"], "ll": x["ll"]})
     for e in ev.values():
         e["part"].sort(key=lambda q: (q["ll"] != "A", q["pu"] or 999, -q["g"], q["name"] or ""))
-    return {"updated": fet.get("updated"), "eventos": sorted(ev.values(), key=lambda e: (e["f"], e["id"]), reverse=True)}
+    return {"updated": fet.get("updated"), "eventos": sorted(ev.values(), key=lambda e: (e["f"], e["id"]), reverse=True),
+            "proximos": proximos}
 
 
 def is_spin_team(name):

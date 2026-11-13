@@ -364,7 +364,7 @@ def scrape_calendar():
             upcoming.append(u)
     if not past and not upcoming:
         print("Calendario: TMT no respondió; se conservan los datos anteriores.")
-        return
+        return False
 
     def fill(t):
         if t["code"] in prev:
@@ -382,9 +382,11 @@ def scrape_calendar():
                                 "ligas": {str(k): v for k, v in LIGAS.items()},
                                 "upcoming": upcoming, "past": past}, ensure_ascii=False))
     print("Calendario:", len(upcoming), "próximos,", len(past), "jugados")
+    return True
 
 
 def scrape_players():
+    """Devuelve True si bajó todo; False si TMT quedó actualizado pero FETEMBA no respondió (parcial)."""
     club_html = get(f"{TMT}/clubes_ampliar.asp?codigo={TMT_CLUB}")
     roster = parse_roster(club_html) if club_html else []
     if len(roster) < 10:
@@ -400,7 +402,7 @@ def scrape_players():
     club = get(f"{FET}/api/publico/clubes/{FET_CLUB}", binary=False) if FET_CLUB else None
     if not club:
         print("FETEMBA no disponible; se conservan los datos anteriores.")
-        return
+        return False
     by_tmt = {p["code"]: p["fet"]["code"] for p in players if p.get("fet") and p["fet"].get("code")}
     fet_ids = {str(j["id"]) for j in club["jugadores"]}
     with ThreadPoolExecutor(4) as ex:
@@ -415,10 +417,12 @@ def scrape_players():
         if r and "circ" in old.get(str(r["id"]), {}):
             r["circ"] = old[str(r["id"])]["circ"]
     out = {"updated": now, "circ_eventos": prev.get("circ_eventos") or {}, "circ_updated": prev.get("circ_updated"),
+           "circ_checked": prev.get("circ_checked"),
            "club": {k: club.get(k) for k in ("id", "nombre", "datos", "delegados", "ranking", "jugadores")},
            "byTmt": {k: v for k, v in bt.items() if v}, "fetOnly": {k: v for k, v in fo.items() if v}}
     (DATA / "fet_raw.json").write_text(json.dumps(out, ensure_ascii=False))
     print("FETEMBA:", len(out["byTmt"]), "vinculados +", len(out["fetOnly"]), "solo FETEMBA")
+    return True
 
 
 def load_fet_raw():
@@ -443,26 +447,58 @@ def circ_eventos():
     return out
 
 
+_TORNEOS_RESULTADO = None   # None: todavía no se bajó en esta corrida; True/False: cómo salió
+
+
+def scrape_torneos_fetemba():
+    """Próximos torneos de FETEMBA (/api/publico/torneos): nombre, fechas, sede, estado de la inscripción, cierre y arancel.
+    La lista es general (igual para todos los clubes): se baja una sola vez por corrida a <datos>/fetemba_torneos.json.
+    Devuelve False si FETEMBA no respondió (se conserva el archivo anterior)."""
+    global _TORNEOS_RESULTADO
+    if _TORNEOS_RESULTADO is not None:
+        return _TORNEOS_RESULTADO
+    _TORNEOS_RESULTADO = False
+    d = get(f"{FET}/api/publico/torneos", binary=False)
+    if not isinstance(d, list):
+        print("Próximos torneos de FETEMBA: no disponibles; se conservan los anteriores.")
+        return False
+    keep = ("id", "codigo", "nombre", "sede", "fecha_desde", "fecha_hasta", "apertura", "cierre", "arancel", "estado", "abierto")
+    torneos = [{k: t.get(k) for k in keep} for t in d if isinstance(t, dict) and not t.get("en_prueba")]
+    torneos.sort(key=lambda t: (t.get("fecha_desde") or "", t.get("id") or 0))
+    path = clubcfg.data_root() / "fetemba_torneos.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"updated": datetime.now(timezone.utc).isoformat(), "torneos": torneos}, ensure_ascii=False))
+    print(f"Próximos torneos de FETEMBA: {len(torneos)}")
+    _TORNEOS_RESULTADO = True
+    return True
+
+
 def scrape_circuito():
     """Grand Slam y Super Series de los jugadores federados. Solo vuelve a bajar todo si FETEMBA cargó
-    un torneo nuevo o más partidos de uno existente; los jugadores nuevos se bajan siempre."""
+    un torneo nuevo o más partidos de uno existente; los jugadores nuevos se bajan siempre.
+    También baja la lista de próximos torneos de FETEMBA. Devuelve False si algo no se pudo bajar."""
+    ok = scrape_torneos_fetemba()
     path = DATA / "fet_raw.json"
     fet = load_fet_raw()
     recs = list((fet.get("byTmt") or {}).values()) + list((fet.get("fetOnly") or {}).values())
     if not recs:
         print("Grand Slam y Super Series: primero hay que bajar los jugadores.")
-        return
+        return ok
     evs = circ_eventos()
     if evs is None:
         print("Grand Slam y Super Series: FETEMBA no respondió; se conservan los datos anteriores.")
-        return
+        return False
     prev = fet.get("circ_eventos") or {}
     cambios = sorted(k for k, n in evs.items() if prev.get(k) != n)
     todo = bool(cambios)
     pend = recs if todo else [r for r in recs if "circ" not in r]
+    ahora = datetime.now(timezone.utc).isoformat()
     if not pend:
+        # sin novedades: igual se deja constancia de cuándo se revisó (el sitio muestra esa fecha)
+        fet["circ_checked"] = ahora
+        path.write_text(json.dumps(fet, ensure_ascii=False))
         print("Grand Slam y Super Series: sin novedades en FETEMBA.")
-        return
+        return ok
     with ThreadPoolExecutor(4) as ex:
         res = list(ex.map(lambda r: fet_circuito(r["id"]), pend))
     err = 0
@@ -473,11 +509,14 @@ def scrape_circuito():
             r["circ"] = c
     if not err:
         fet["circ_eventos"] = evs
-    fet["circ_updated"] = datetime.now(timezone.utc).isoformat()
+    fet["circ_updated"] = ahora
+    if not err:
+        fet["circ_checked"] = ahora
     path.write_text(json.dumps(fet, ensure_ascii=False))
     print(f"Grand Slam y Super Series: {len(pend) - err} jugadores actualizados"
           + (f" (torneos nuevos o con más partidos: {', '.join(cambios)})" if todo else " (jugadores nuevos)")
           + (f", {err} con error (se reintenta la próxima vez)" if err else ""))
+    return ok and not err
 
 
 def run_club(cfg, partes):
@@ -485,25 +524,31 @@ def run_club(cfg, partes):
     configure(cfg)
     ok = True
     print(f"== {cfg['nombre']} ({cfg['slug']})")
+    # Cada parte sigue aunque otra falle (se guarda lo que se pueda); al final la corrida avisa si alguna no se pudo actualizar.
     if "calendario" in partes:
         if LIGAS:
             try:
-                scrape_calendar()
+                ok = scrape_calendar() is not False and ok
             except Exception as e:  # noqa
                 print("Calendario: error", e, file=sys.stderr)
+                ok = False
         else:
             print("Calendario: el club no tiene ligas de TMT configuradas.")
     if "jugadores" in partes:
         if TMT_CLUB:
             try:
-                scrape_players()
+                ok = scrape_players() is not False and ok
             except Exception as e:  # noqa
                 print("Jugadores:", e, file=sys.stderr)
                 ok = False
         else:
             print("Jugadores: el club no tiene código de TMT configurado.")
     if "circuito" in partes:
-        scrape_circuito()
+        try:
+            ok = scrape_circuito() is not False and ok
+        except Exception as e:  # noqa
+            print("Grand Slam y Super Series: error", e, file=sys.stderr)
+            ok = False
     return ok
 
 

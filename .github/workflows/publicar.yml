@@ -171,7 +171,10 @@ jobs:
           echo "NUEVOS=$nuevos" >> "$GITHUB_ENV"
           [ -n "$nuevos" ] && echo "- Clubes nuevos: se bajan sus datos completos ($nuevos)" | tee -a "$GITHUB_STEP_SUMMARY" || true
 
+      # Las descargas siguen aunque una falle (se guarda y se publica lo que sí se pudo bajar); si alguna falla, el último
+      # paso de la corrida lo avisa poniéndola en rojo (GitHub manda el correo de "workflow fallido").
       - name: Bajar los datos de los clubes nuevos
+        id: nuevos_dl
         if: env.BAJAR != 'true' && env.NUEVOS != ''
         continue-on-error: true
         run: |
@@ -179,11 +182,13 @@ jobs:
           python scripts/equipos.py $NUEVOS
 
       - name: Bajar TMT y FETEMBA
+        id: bajar
         if: env.BAJAR == 'true' && env.PARTES != ''
         continue-on-error: true
         run: python scripts/scrape.py $PARTES $CLUB_ARG
 
       - name: Bajar Liga de Equipos y Copa de Clubes
+        id: equipos_dl
         if: env.BAJAR == 'true' && env.EQUIPOS == 'true'
         continue-on-error: true
         run: python scripts/equipos.py $CLUB_ARG $EQUIPOS_ARG
@@ -240,3 +245,21 @@ jobs:
         id: deploy3
         if: steps.deploy.outcome == 'failure' && steps.deploy2.outcome == 'failure'
         uses: actions/deploy-pages@v5
+
+      # Va al final, ya con el sitio publicado: marca la corrida como fallida (rojo + correo de GitHub) si alguna descarga no se pudo
+      # hacer. El sitio quedó publicado con los últimos datos buenos.
+      - name: Avisar si alguna descarga falló
+        if: ${{ !cancelled() && (steps.nuevos_dl.outcome == 'failure' || steps.bajar.outcome == 'failure' || steps.equipos_dl.outcome == 'failure') }}
+        run: |
+          fallas=""
+          [ "${{ steps.nuevos_dl.outcome }}" = failure ] && fallas="$fallas clubes-nuevos"
+          [ "${{ steps.bajar.outcome }}" = failure ] && fallas="$fallas TMT/FETEMBA"
+          [ "${{ steps.equipos_dl.outcome }}" = failure ] && fallas="$fallas Liga-y-Copa"
+          msg="No se pudo actualizar:${fallas}. El sitio se publicó con los últimos datos buenos."
+          echo "::error::$msg"
+          {
+            echo "### ❌ Falló una descarga"
+            echo "- $msg"
+            echo "- El detalle está en los pasos \"Bajar …\" de esta corrida. Suele ser que TMT o FETEMBA no respondieron: la próxima corrida lo reintenta."
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1

@@ -1,0 +1,70 @@
+name: Verificar cambios
+
+# Se corre solo en cada pull request (y a mano): comprueba que el código y la configuración estén bien ANTES de mergear.
+# No publica nada ni toca los datos; si algo falla, el PR queda con una tilde roja.
+#   1) Scripts de Python y workflows válidos, club.json completos (scripts/verificar.py).
+#   2) JavaScript del sitio sin errores de sintaxis.
+#   3) Arma el sitio con los datos guardados (rama "datos") y revisa que no queden marcadores sin reemplazar.
+#   4) Abre cada club en un navegador y recorre las pantallas: falla si hay errores de JS o archivos que no cargan (scripts/smoke.js).
+#   5) Arma también la página de "en construcción" (modo mantenimiento) y revisa que salga bien.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verificar-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLUBES_DATA: ${{ github.workspace }}/.datos
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - run: pip install -r requirements.txt pyyaml
+
+      - name: Código y configuración
+        run: |
+          python scripts/verificar.py
+          node --check app/assets/app.js
+
+      - name: Traer los datos guardados (rama datos)
+        run: |
+          if git ls-remote --exit-code --heads origin datos >/dev/null; then
+            git fetch --depth 1 origin datos
+            git worktree add "$CLUBES_DATA" FETCH_HEAD
+          else
+            echo "No hay rama datos: se arma el sitio sin datos (solo se prueba el código)."
+            mkdir -p "$CLUBES_DATA"
+          fi
+
+      - name: Armar el sitio
+        run: |
+          python scripts/build.py
+          python scripts/verificar.py --sitio
+
+      - name: Recorrer el sitio en un navegador
+        run: |
+          npm install --no-save --no-audit --no-fund playwright
+          npx playwright install --with-deps chromium
+          node scripts/smoke.js _site
+
+      - name: Página de en construcción
+        run: |
+          python scripts/mantenimiento.py activar --mensaje "Prueba <b>automática</b>"
+          python scripts/build.py
+          grep -q "en construcci" _site/index.html
+          ! grep -q "<b>automática</b>" _site/index.html
+          python scripts/mantenimiento.py desactivar

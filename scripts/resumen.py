@@ -1,12 +1,15 @@
 """Resumen semanal de cada club (lo que pasó en los últimos 7 días y lo que viene), listo para compartir.
 
 Lee el sitio ya armado (_site/<slug>/data/*.json), así que hay que correr build.py antes.
-Lo manda por Telegram (si está configurado), lo muestra en el resumen de la Action y lo imprime.
+Lo manda por Telegram (si está configurado) con un link "Compartir por WhatsApp", lo muestra en el resumen de la Action y lo imprime.
 Uso:  python scripts/resumen.py [--club slug] [--dias 7] [--no-enviar]
 """
 import argparse
+import html
 import json
 import os
+import re
+from urllib.parse import quote
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -26,6 +29,21 @@ def nombre(n):
 def dm(iso):
     d = date.fromisoformat(iso)
     return f"{d.day} {MESES[d.month - 1]}"
+
+
+def link_whatsapp(txt, max_url=1800):
+    """Link wa.me con el resumen ya escrito: al tocarlo se abre WhatsApp para elegir el chat o grupo.
+    El texto pasa a formato WhatsApp (*negrita*) y se recorta por el final si la URL queda muy larga (Telegram acepta ~2000)."""
+    t = html.unescape(re.sub(r"</?b>", "*", txt))
+    lineas = t.split("\n")
+    while len(lineas) > 3:
+        url = "https://wa.me/?text=" + quote("\n".join(lineas))
+        if len(url) <= max_url:
+            return url
+        # saca la línea de contenido más baja antes del pie ("Más en …"), sin tocar el título
+        i = len(lineas) - 3 if lineas[-1].startswith("Más en") else len(lineas) - 1
+        del lineas[max(i, 1)]
+    return "https://wa.me/?text=" + quote("\n".join(lineas))
 
 
 def resumen(slug, dias=7, hoy=None):
@@ -97,11 +115,12 @@ def main():
     fallo = False
     for slug in a.club or clubcfg.slugs():
         txt = resumen(slug, a.dias)
+        wa = link_whatsapp(txt)
         print(txt, "\n")
         if os.environ.get("GITHUB_STEP_SUMMARY"):
             with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
-                f.write(f"### Resumen · {slug}\n\n```\n{txt}\n```\n")
-        if not a.no_enviar and telegram.enviar(txt) is False:
+                f.write(f"### Resumen · {slug}\n\n```\n{txt}\n```\n\n[📲 Compartir por WhatsApp]({wa})\n")
+        if not a.no_enviar and telegram.enviar(f'{txt}\n\n<a href="{html.escape(wa)}">📲 Compartir por WhatsApp</a>') is False:
             fallo = True
     raise SystemExit(1 if fallo else 0)
 

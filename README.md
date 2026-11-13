@@ -66,6 +66,7 @@ Las dos cosas usan un bot de Telegram. Configuración (una sola vez):
 - **Aviso de falla**: si una actualización o la publicación falla, llega un mensaje con el link a la corrida (además del mail de GitHub).
 - **Resumen semanal** (`resumen-semanal.yml`, lunes 09:17): torneos de la semana, quién más subió y bajó de rating, podios del club y próximos
   torneos. También queda en el resumen de la corrida. A mano: Actions → "Resumen semanal" (admite un club y cuántos días mirar).
+- El mensaje trae un link **📲 Compartir por WhatsApp**: al tocarlo se abre WhatsApp con el resumen ya escrito para elegir el grupo (también está en el resumen de la corrida).
 - Sin los secrets no pasa nada: no se manda nada y el sitio funciona igual. Probar: `python scripts/resumen.py --no-enviar`.
 
 ## Vista previa al compartir (WhatsApp, Telegram…)

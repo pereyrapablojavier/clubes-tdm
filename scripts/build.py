@@ -235,10 +235,12 @@ def build():
         "nombre": CFG["nombre"], "sigla": CFG["tmt"].get("sigla"),
         "tmt_code": tmt["club"]["code"], "tmt_rank": tmt["club"].get("rank"), "fet_id": fet_club.get("id"),
         "direccion": fd.get("direccion"), "localidad": fd.get("localidad"), "horarios": CFG.get("horarios") or fd.get("horarios"),
-        "instalaciones": fd.get("instalaciones"), "como_llegar": fd.get("como_llegar"),
+        "instalaciones": CFG.get("instalaciones") or fd.get("instalaciones"),
+        "como_llegar": CFG.get("como_llegar") or fd.get("como_llegar"),
         "instagram": CFG.get("instagram"),
         "sedes": CFG.get("sedes") or [],
         "entrenadores": entrenadores(CFG),
+        "horarios_sedes": horarios_sedes(CFG),
         "cfg": app_cfg(CFG), "sitio": site_cfg(),
         "stats": {
             "tmt_players": len(tmt_pl), "fet_players": len(fet_roster),
@@ -326,6 +328,19 @@ def entrenadores(cfg):
         if e.get("instagram") and not IG_RE.match(e["instagram"]):
             raise SystemExit(f"{cfg['slug']}: instagram de {e['nombre']} inválido: {e['instagram']!r} (https://www.instagram.com/usuario/)")
         out.append({k: e[k] for k in ("nombre", "instagram") if e.get(k)})
+    return out
+
+
+def horarios_sedes(cfg):
+    """Tarjetas de horarios por sede (club.json -> horarios_sedes: [{titulo, texto, notas: [..]}])."""
+    out = []
+    for h in cfg.get("horarios_sedes") or []:
+        if not isinstance(h, dict) or not h.get("titulo") or not h.get("texto"):
+            raise SystemExit(f"{cfg['slug']}: cada horarios_sedes necesita titulo y texto (es {h!r})")
+        notas = h.get("notas") or []
+        if not isinstance(notas, list) or not all(isinstance(n, str) for n in notas):
+            raise SystemExit(f"{cfg['slug']}: las notas de '{h['titulo']}' deben ser una lista de textos")
+        out.append({"titulo": h["titulo"], "texto": h["texto"], "notas": notas})
     return out
 
 

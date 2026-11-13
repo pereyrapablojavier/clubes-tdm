@@ -450,6 +450,7 @@
       <div class="grid g2">
         <div class="card"><h3>🕒 ${esc(K().horarios_titulo || "Horarios")}</h3><p style="white-space:pre-line;margin:0">${esc(c.horarios || "Consultar por Instagram.")}</p>
           ${c.instalaciones ? `<p class="small muted">${esc(c.instalaciones)}</p>` : ""}${c.como_llegar ? `<p class="small muted">${esc(c.como_llegar)}</p>` : ""}</div>
+        ${(c.horarios_sedes || []).map((h) => `<div class="card"><h3>🕒 ${esc(h.titulo)}</h3><p style="white-space:pre-line;margin:0">${esc(h.texto)}</p>${(h.notas || []).map((n) => `<p class="small muted">${esc(n)}</p>`).join("")}</div>`).join("")}
         <div class="card"><h3>👥 Entrenadores</h3><ul class="list">${c.entrenadores.map((e) => { const o = typeof e === "string" ? { nombre: e } : e; const ig = /^https:\/\//.test(o.instagram || "") ? o.instagram : "";
           return `<li><span>${esc(o.nombre)}</span>${ig ? `<a class="small ig" href="${esc(ig)}" target="_blank" rel="noopener" aria-label="Instagram de ${esc(o.nombre)}">Instagram ↗</a>` : ""}</li>`; }).join("")}</ul>
           <p style="margin-top:14px"><a class="btn" target="_blank" rel="noopener" href="${c.instagram}">Escribinos por Instagram</a></p>

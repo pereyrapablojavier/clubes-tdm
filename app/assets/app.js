@@ -254,7 +254,7 @@
         <div class="avatar">${esc(initials(p.name))}</div>
         <div style="flex:1;min-width:220px">
           <h1 style="margin-bottom:6px">${esc(niceName(p.name))}</h1>
-          <div class="meta">${t ? catBadge(t.cat) : ""} ${f && f.cat ? `<span class="badge fet">FETEMBA ${esc(f.cat)}</span>` : ""} ${srcBadges(p.src)}
+          <div class="meta">${t ? (t.cat ? `<span class="badge c${esc(t.cat)}">${esc(t.cat)} TMT</span>` : srcBadges(["tmt"])) : ""} ${f ? (f.cat ? `<span class="badge fet">${esc(String(f.cat).toLowerCase())} FETEMBA</span>` : srcBadges(["fet"])) : ""}
             ${f && f.club && !f.spin ? `<span class="small muted">· Federado por ${esc(f.club)}</span>` : ""}</div>
           ${t || f ? `<div class="small muted codes" style="margin-top:6px">${[t ? `Código TMT: <b class="num">${esc(t.code)}</b>` : "", f ? `ID FETEMBA: <b class="num">${esc(f.id)}</b>` : ""].filter(Boolean).join(" · ")}</div>` : ""}
         </div>

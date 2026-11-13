@@ -26,12 +26,23 @@ La versión de los archivos (`?v=` y la caché de la app) se calcula sola a part
 
 ## Publicación y datos
 
-La Action [`Actualizar y publicar`](.github/workflows/publicar.yml) arma el sitio y lo publica en GitHub Pages:
+Cada parte de los datos se actualiza con **su propia Action y su propio horario** (hora de Argentina). Todas hacen lo mismo al terminar:
+guardan los datos en la rama `datos`, arman el sitio y lo publican en GitHub Pages.
 
-- **Automático, una vez por semana (jueves 06:17 Argentina):** baja los datos de todos los clubes activos, arma y publica.
-- **Manual** (pestaña **Actions → "Actualizar y publicar" → Run workflow**): elegís el club (vacío = todos) y qué bajar
-  (jugadores, calendario, Liga/Copa, Grand Slam y Super Series).
+| Action | Cuándo | Qué baja | Tarda |
+|---|---|---|---|
+| **Actualizar calendarios** | Todos los días, 06:17 | Calendario de torneos del club (TMT), próximos partidos de Liga y Copa, y Grand Slam y Super Series (solo baja todo si hay novedades) | ~30 s |
+| **Actualizar Liga y Copa** | Lunes y jueves, 07:17 | Liga y Copa completas: tablas, encuentros con sus partidos y sets, próximos partidos | ~30 s |
+| **Actualizar jugadores** | Jueves, 07:47 | Plantel y fichas de cada jugador (TMT y FETEMBA: ratings, rankings, partidos, palmarés) | 2 a 4 min por club |
+
+- **A mano:** en la pestaña **Actions** se puede lanzar cualquiera de las tres (*Run workflow*, con la opción de elegir un club), o
+  **"Actualizar y publicar"**, que deja elegir exactamente qué bajar (jugadores, calendario, Liga/Copa o solo sus próximos partidos, Grand Slam y SS).
 - **Al mergear cambios en `main`:** solo arma y publica, sin bajar datos. Si hay un club nuevo (sin datos todavía), baja los suyos completos.
+- **Una corrida por vez:** todas comparten una cola (escriben en la misma rama y publican). Si hay varias esperando, GitHub conserva solo la última,
+  por eso los horarios están escalonados. Los minutos 17 y 47 son a propósito: a la hora en punto GitHub se satura y puede saltearse corridas.
+- **Cambiar un horario:** editar la línea `cron` del archivo `.github/workflows/actualizar-*.yml` (en UTC: Argentina + 3 horas).
+
+Los scripts también se pueden correr a mano: `scrape.py [calendario|jugadores|circuito]`, `equipos.py [--solo proximos]`; todos aceptan `--club <slug>`.
 
 Los datos descargados se guardan en la rama **`datos`** (una carpeta por club), no en `main`: así `main` tiene solo código.
 Si la rama no existe, la próxima descarga la crea.

@@ -49,6 +49,27 @@ Si la rama no existe, la próxima descarga la crea.
 
 Para que publique, en el repo: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 
+## Avisos de falla y fechas de actualización
+
+- Si una descarga falla (TMT o FETEMBA caídos, por ejemplo), la corrida de la Action queda **en rojo** y GitHub te manda un mail.
+  Igual se publica el sitio con los datos anteriores, así que el sitio no se rompe.
+- El pie de cada club muestra la fecha de cada parte (jugadores, calendario, próximos partidos, Liga/Copa y Grand Slam/Super Series).
+- En Grand Slam y Super Series se muestran también los próximos torneos de FETEMBA (fechas e inscripción).
+
+## Vista previa al compartir (WhatsApp, Telegram…)
+
+Cada club tiene `clubes/<slug>/og.png` (1200x630) y la portada `config/og.png`. Se generan con
+`python scripts/og_image.py [--club <slug>]` (requiere Pillow) cuando se suma un club o cambia su escudo, nombre o colores;
+no corre en las Actions. La URL pública va en `config/sitio.json` (`url`). WhatsApp guarda la vista previa de cada link: si
+cambiás la imagen y no se actualiza, probá el link en el depurador de Facebook (Sharing Debugger).
+
+## Verificación automática en cada PR
+
+La Action **Verificar cambios** corre sola en cada pull request (no publica nada): revisa scripts de Python y workflows
+(`scripts/verificar.py`), la sintaxis de `app.js`, arma el sitio con los datos reales, lo recorre en un navegador
+(`scripts/smoke.js`: falla ante errores de JS o archivos que no cargan) y prueba la página de "en construcción".
+Para que bloquee el merge cuando falla: Settings → Branches → regla para `main` → *Require status checks* → `verificar`.
+
 ## Modo mantenimiento ("Sitio en construcción")
 
 Para sacar el sitio de línea un rato: **Actions → "Modo mantenimiento" → Run workflow → `activar`** (con un mensaje opcional, por ejemplo

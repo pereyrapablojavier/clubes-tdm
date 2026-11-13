@@ -69,14 +69,17 @@
   "entrenadores": [
     {
       "nombre": "Darío Neira",
+      "jugador": "f893",
       "instagram": "https://www.instagram.com/neiradario89/"
     },
     {
       "nombre": "Rodrigo Ezequiel Delgadillo",
+      "jugador": "5178",
       "instagram": "https://www.instagram.com/rodrigodelgadillotm/"
     },
     {
       "nombre": "Giselle Muñoz",
+      "jugador": "f326",
       "instagram": "https://www.instagram.com/giselle.munoz.583/"
     }
   ],

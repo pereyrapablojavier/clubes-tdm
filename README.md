@@ -90,7 +90,7 @@ Hoy 4F está así.
    | `tmt.ligas` | Ligas de TMT que organiza el club (`torneos.asp?filtroLiga=…`) con la sede de cada una. Vacío si no organiza torneos. |
    | `fetemba.club` | Id del club en FETEMBA (`/api/publico/clubes/…`). |
    | `fetemba.equipos` | Expresión con la que empiezan los nombres de sus equipos en fetembaequipos.ar (por ejemplo `^spin tdm`). |
-   | `sedes`, `horarios_titulo`, `horarios`, `instalaciones`, `como_llegar`, `entrenadores` | Sedes (nombre, dirección, lugar, días), título y texto de la tarjeta de horarios, y las notas de abajo (instalaciones y cómo llegar). Si `horarios`, `instalaciones` o `como_llegar` no están, se usan los de FETEMBA; si están, **mandan ellos** y los cambios hechos en FETEMBA no se ven. |
+   | `sedes`, `horarios_titulo`, `horarios`, `instalaciones`, `como_llegar`, `entrenadores` (cada uno: un texto, o `{"nombre", "instagram", "jugador"}`; con `jugador` —el id en el sitio, el de `#/jugador/<id>`— el nombre lleva a su ficha) | Sedes (nombre, dirección, lugar, días), título y texto de la tarjeta de horarios, y las notas de abajo (instalaciones y cómo llegar). Si `horarios`, `instalaciones` o `como_llegar` no están, se usan los de FETEMBA; si están, **mandan ellos** y los cambios hechos en FETEMBA no se ven. |
 | `horarios_sedes` | Tarjetas de horarios de otras sedes, antes de Entrenadores: `[{"titulo": "Horarios · Sede X", "texto": "Lunes: 19:00 a 20:30\nMartes: ...", "notas": ["..."]}]`. Opcional. |
 | `menu_enlaces` | Enlaces extra al final del menú Mi Club, debajo de "Seguinos": `[{"texto": "Somos Selección", "url": "https://..."}]`. Opcional. |
 

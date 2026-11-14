@@ -18,6 +18,33 @@
   const initials = (n) => { const [s, g] = String(n).split(","); return ((g || "").trim()[0] || "") + (s.trim()[0] || ""); };
   const catBadge = (c) => (c ? `<span class="badge c${esc(c)}">${esc(c)}</span>` : "");
   const signed = (v) => (v == null ? "–" : v > 0 ? `<span class="up">+${v}</span>` : v < 0 ? `<span class="down">${v}</span>` : "0");
+  // Ayuda: "ⓘ" que explica un número. Pasa el mouse, o tocalo en el celular. (info(texto))
+  const info = (txt) => `<span class="info" tabindex="0" role="button" aria-label="${esc(txt)}" data-tip="${esc(txt)}">i</span>`;
+  const PTS = "Puntos de rating TMT (un sistema tipo Elo: se gana más al vencer a rivales de mayor rating y se pierde más al caer con uno de menor rating).";
+  (() => {
+    let tip = null, cur = null, t0 = 0;
+    const hide = () => { if (tip) tip.style.display = "none"; cur = null; };
+    const show = (el) => {
+      if (!tip) { tip = document.createElement("div"); tip.className = "tipbox"; tip.setAttribute("role", "tooltip"); document.body.appendChild(tip); }
+      tip.textContent = el.dataset.tip; tip.style.display = "block"; cur = el; t0 = Date.now();
+      const r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+      let x = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), innerWidth - w - 8);
+      let y = r.top - h - 8; if (y < 8) y = r.bottom + 8;
+      tip.style.left = x + "px"; tip.style.top = y + "px";
+    };
+    document.addEventListener("click", (e) => {
+      const el = e.target.closest && e.target.closest(".info");
+      if (!el) return hide();
+      e.preventDefault(); e.stopPropagation(); // dentro de un encabezado ordenable, no ordena
+      if (cur === el && Date.now() - t0 > 400) hide(); else show(el); // en el celular el toque dispara primero 'mouseover': no lo cierres enseguida
+    }, true);
+    document.addEventListener("pointerover", (e) => { if (e.pointerType !== "mouse") return; const el = e.target.closest && e.target.closest(".info"); if (el && el !== cur) show(el); }); // el hover es solo del mouse; en el celular se toca
+    document.addEventListener("pointerout", (e) => { if (e.pointerType === "mouse" && e.target.closest && e.target.closest(".info") && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest(".info"))) hide(); });
+    document.addEventListener("focusin", (e) => { const el = e.target.closest && e.target.closest(".info"); if (el) show(el); });
+    document.addEventListener("focusout", hide);
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") hide(); });
+    addEventListener("scroll", hide, true); addEventListener("hashchange", hide);
+  })();
   const form = (f) => `<span class="form">${(f || []).map((x) => `<i class="${x}">${x}</i>`).join("")}</span>`;
   const plink = (id, name) => `<a class="pname" href="#/jugador/${esc(id)}">${esc(name)}</a>`;
   const srcBadges = (src) => (src || []).map((s) => `<span class="badge src ${s}">${s === "tmt" ? "TMT" : "FETEMBA"}</span>`).join(" ");
@@ -150,7 +177,7 @@
     </div>
 
     <div class="section grid g3">
-      <div class="card"><h3>📈 En racha</h3><p class="small muted">Mayor suba de rating en los últimos 20 torneos.</p>
+      <div class="card"><h3>📈 En racha ${info("El número es la suma de puntos de rating que ganó (+) o perdió (−) en sus últimos 20 torneos. " + PTS + " Solo cuentan jugadores con al menos 5 partidos en los últimos 12 meses.")}</h3><p class="small muted">Mayor suba de rating en los últimos 20 torneos.</p>
         <ul class="list">${hot.map((p) => `<li><span class="grow ellipsis">${plink(p.id, p.name)}</span>${signed(p.delta)}</li>`).join("")}</ul></div>
       <div class="card"><h3>🎯 Efectividad</h3><p class="small muted">% de partidos ganados en el último año (mín. 15).</p>
         <ul class="list">${best12.map((p) => `<li><span class="grow ellipsis">${plink(p.id, p.name)}</span><b class="num">${p.wr12}%</b></li>`).join("")}</ul></div>
@@ -161,7 +188,7 @@
     <div class="section grid g2">
       <div class="card"><div class="card-head"><h3>Últimos torneos con ${esc(K().corto)}</h3><a href="#/torneos">Ver más →</a></div>
         <ul class="list">${tours.map(tourItem).join("")}</ul></div>
-      <div class="card"><h3>⚡ Batacazos</h3><p class="small muted">Victorias ante rivales de mucho mayor rating.</p>
+      <div class="card"><h3>⚡ Batacazos ${info("El número es la diferencia de rating: cuántos puntos más tenía el rival que el jugador al empezar ese torneo. Por ejemplo +350 es haberle ganado a alguien con 350 puntos más de rating.")}</h3><p class="small muted">Victorias ante rivales de mucho mayor rating.</p>
         <ul class="list">${CLUB.upsets.slice(0, 7).map((u) => `<li><span class="grow"><div class="ellipsis">${plink(u.id, u.name)} <span class="muted">venció a</span> ${esc(u.op)} <span class="muted small">(${esc(u.oc)})</span></div>
           <div class="small muted ellipsis">${fdate(u.date)} · ${esc(u.torneo)}</div></span><span class="up num">+${u.diff}</span></li>`).join("")}</ul></div>
     </div>`;
@@ -178,8 +205,8 @@
   function viewJugadores() {
     const cols = [
       ["clubPos", "#", "r"], ["name", "Jugador"], ["cat", "Cat. TMT"], ["rating", "Rating TMT", "r"], ["rankPos", "Pos. TMT", "r"],
-      ["wr", "% Gan. total", "r"], ["wr12", "% Gan. 12m", "r"], ["pj", "Partidos", "r"], ["pod", "Podios", "r"], ["delta", "Var. 20 torneos", "r"],
-      ["spark", "Tendencia", ""], ["fr", "Rating FETEMBA", "r"], ["fcat", "Cat. FET", ""], ["ultimo", "Último torneo", ""],
+      ["wr", "% Gan. total", "r"], ["wr12", "% Gan. 12m", "r"], ["pj", "Partidos", "r"], ["pod", "Podios", "r"], ["delta", `Var. 20 torneos ${info("Puntos de rating TMT que ganó (+) o perdió (−) en sus últimos 20 torneos. " + PTS)}`, "r"],
+      ["spark", `Tendencia ${info("Mini gráfico de cómo fue cambiando su rating en los últimos torneos: verde si terminó arriba de donde empezó, rojo si terminó abajo.")}`, ""], ["fr", "Rating FETEMBA", "r"], ["fcat", "Cat. FET", ""], ["ultimo", "Último torneo", ""],
     ];
     $app.innerHTML = `
       <div class="section"><h1>Jugadores</h1>
@@ -270,7 +297,7 @@
     <div class="grid tiles section">
       ${t ? tile(fmt(t.rating), "Rating TMT", t.rankPos ? `Puesto ${fmt(t.rankPos)} del ranking` : "") : ""}
       ${t ? tile(`${t.clubPos}°`, `Posición en ${esc(K().corto)}`, `de ${CLUB.stats.tmt_players} jugadores`) : ""}
-      ${t ? tile(signed(t.recent.delta), "Variación", "últimos 20 torneos") : ""}
+      ${t ? tile(signed(t.recent.delta), `Variación ${info("Puntos de rating TMT que ganó (+) o perdió (−) sumando sus últimos 20 torneos. " + PTS)}`, "últimos 20 torneos") : ""}
       ${f ? tile(fmt(f.rating), "Rating FETEMBA", f.pos ? `Puesto ${fmt(f.pos)} · ${esc(f.cat || "")}` : "") : ""}
       ${f && f.res ? tile(fmt(f.res.mejor_puntos), "Mejor rating FETEMBA", f.res.mejor_puntos_fecha ? fdate(f.res.mejor_puntos_fecha) : "") : ""}
       ${f && f.res ? tile(f.res.mejor_posicion ? f.res.mejor_posicion + "°" : "–", "Mejor puesto FETEMBA") : ""}
@@ -297,12 +324,13 @@
           <dt>Sets</dt><dd>${t.recent.sets_w} – ${t.recent.sets_l}</dd>
           <dt>Partidos a 5 sets</dt><dd>${t.recent.dec_w}G – ${t.recent.dec_l}P</dd>
         </dl></div>
-      <div class="card"><h3>Mejores victorias</h3>
+      <div class="card"><h3>Mejores victorias ${info("Sus victorias ante los rivales de mayor rating. El +número es la diferencia de rating: cuántos puntos más tenía el rival que este jugador al empezar el torneo. A la derecha del nombre figura el rating del rival.")}</h3>
         <ul class="list">${t.upsets.length ? t.upsets.map((u) => `<li><span class="grow"><div class="ellipsis">${esc(u.op)} <span class="muted small">(${esc(u.oc)}) · ${fmt(u.or)}</span></div><div class="small muted ellipsis">${fdate(u.date)} · ${esc(u.res)}</div></span>${u.diff > 0 ? `<span class="up num">+${u.diff}</span>` : ""}</li>`).join("") : `<li class="muted">Sin datos</li>`}</ul></div>
       <div class="card"><h3>Material</h3>
         <dl class="kv"><dt>Madera</dt><dd>${esc(eq.madera) || "–"}</dd><dt>Goma drive</dt><dd>${esc(eq.drive) || "–"}</dd><dt>Goma revés</dt><dd>${esc(eq.reves) || "–"}</dd><dt>Mano hábil</dt><dd>${esc(eq.mano) || "–"}</dd></dl></div>
     </div>
     <div class="section"><h2>Últimos torneos (TMT)</h2>
+      <p class="small muted">A la derecha de cada torneo: puntos de rating que ganó (+) o perdió (−) en ese torneo. Dentro de cada torneo, a la derecha de cada partido: los puntos que ese partido sumó o restó. ${info(PTS)}</p>
       ${t.tours.map((x, i) => `<details class="tour" ${i === 0 ? "open" : ""}><summary>
         <span class="num muted small" style="width:78px">${fdate(x.date)}</span><span class="t">${esc(x.name)}</span>
         <span class="small">${x.w}G–${x.l}P</span><span class="num">${signed(x.var)}</span></summary>
@@ -391,7 +419,7 @@
       ${CLUB.tournaments.map((t, i) => `<details class="tour" ${i < 2 ? "open" : ""}><summary>
         <span class="num muted small" style="width:78px">${fdate(t.date)}</span><span class="t">${esc(t.name)}</span>
         <span class="small">${t.players.length} jug. · ${t.w}G–${t.l}P</span></summary>
-        <div class="body"><div class="tbl-wrap"><table><thead><tr><th>Jugador</th><th class="r">G</th><th class="r">P</th><th class="r">Rating</th></tr></thead><tbody>
+        <div class="body"><div class="tbl-wrap"><table><thead><tr><th>Jugador</th><th class="r">G</th><th class="r">P</th><th class="r">Rating ${info("Puntos de rating TMT que ganó (+) o perdió (−) en este torneo. " + PTS)}</th></tr></thead><tbody>
         ${t.players.map((p) => `<tr><td>${plink(p.id, p.name)}</td><td class="r num">${p.w}</td><td class="r num">${p.l}</td><td class="r num">${signed(p.var)}</td></tr>`).join("")}
         </tbody></table></div>
         <p class="small"><a href="${TMT}/partidos_xtorneo.asp?codigo=${esc(t.tid)}" target="_blank" rel="noopener">Ver resultados completos en TMT ↗</a></p></div></details>`).join("")}
@@ -433,7 +461,7 @@
       ${row("Torneos (12 meses)", g(A, "tmt.y1.torneos"), g(B, "tmt.y1.torneos"))}
       ${row("Títulos TMT", g(A, "tmt.tot.p1"), g(B, "tmt.tot.p1"))}
       ${row("Podios TMT", A.tmt ? A.tmt.tot.p1 + A.tmt.tot.p2 + A.tmt.tot.p3 : null, B.tmt ? B.tmt.tot.p1 + B.tmt.tot.p2 + B.tmt.tot.p3 : null)}
-      ${row("Var. últimos 20 torneos", g(A, "tmt.recent.delta"), g(B, "tmt.recent.delta"))}
+      ${row(`Var. últimos 20 torneos ${info("Puntos de rating TMT que ganó (+) o perdió (−) sumando sus últimos 20 torneos.")}`, g(A, "tmt.recent.delta"), g(B, "tmt.recent.delta"))}
       ${row("Rating FETEMBA", g(A, "fet.rating"), g(B, "fet.rating"))}
       ${row("Puesto FETEMBA", g(A, "fet.pos"), g(B, "fet.pos"), "lo")}
       ${row("Mejor rating FETEMBA", g(A, "fet.res.mejor_puntos"), g(B, "fet.res.mejor_puntos"))}

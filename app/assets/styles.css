@@ -314,3 +314,8 @@ details.circ .fecha span { font-size: 10px; letter-spacing: .5px; }
 /* estado de la inscripción de un torneo */
 .badge.ok { background: #E3F5EC; color: #146B43; border-color: #BDE5D0; }
 @media (prefers-color-scheme: dark) { .badge.ok { background: #123325; color: #7ED6A8; border-color: #1E5A3F; } }
+
+/* ayuda "i" que explica un número */
+.info { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; margin-left: 4px; border-radius: 50%; border: 1px solid var(--linea); background: var(--celeste-3); color: var(--azul); font: italic 700 10px/1 Georgia, serif; vertical-align: middle; cursor: help; text-transform: none; letter-spacing: 0; user-select: none; }
+.info:hover, .info:focus { background: var(--azul); color: #fff; outline: none; }
+.tipbox { position: fixed; z-index: 1000; display: none; max-width: min(300px, calc(100vw - 16px)); padding: 9px 11px; border-radius: 10px; background: #0E1B2A; color: #fff; font: 400 12.5px/1.4 "Inter", system-ui, sans-serif; box-shadow: 0 6px 20px rgba(0,0,0,.28); pointer-events: none; text-transform: none; letter-spacing: 0; }

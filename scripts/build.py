@@ -293,6 +293,8 @@ APP_KEYS = ("slug", "nombre", "corto", "subtitulo", "app_corto", "zona", "intro"
 def app_cfg(cfg):
     out = {k: cfg.get(k) for k in APP_KEYS if cfg.get(k) is not None}
     out["equipos"] = cfg["fetemba"].get("equipos")
+    if (clubcfg.CLUBES / cfg["slug"] / "qr.png").exists():
+        out["qr"] = True  # el club tiene su QR (clubes/<slug>/qr.png): se muestra en la sección de la app
     return out
 
 
@@ -461,6 +463,9 @@ def write_app():
     og_png = clubcfg.CLUBES / cfg["slug"] / "og.png"
     if og_png.exists():
         shutil.copy(og_png, OUT / "assets" / "og.png")
+    qr_png = clubcfg.CLUBES / cfg["slug"] / "qr.png"
+    if qr_png.exists():
+        shutil.copy(qr_png, OUT / "assets" / "qr.png")
     shutil.copy(club_files(cfg)[0], OUT / "assets" / "escudo.png")
     (OUT / "assets" / "icons").mkdir(exist_ok=True)
     for f in club_files(cfg)[1:]:

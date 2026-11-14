@@ -89,6 +89,13 @@ se sigue. La lista agregada se guarda en la rama `datos` (`<slug>/seguir.json`) 
 `python scripts/qr_image.py [--club <slug>]` (requiere `pip install qrcode pillow`): es un QR directo a la dirección del club con el escudo
 al centro, sin servicios intermedios, así que no vence. Si cambia la dirección del sitio (`url`/`base` en `config/sitio.json`), hay que volver a generarlo.
 
+## Novedades del sitio por Telegram
+
+La Action **Novedades del sitio** manda por Telegram lo que se agregó al sitio para los usuarios. Las novedades se escriben a mano, en lenguaje simple,
+en `config/novedades.json` (`id` creciente, `fecha`, `icono`, `titulo`, `detalle`): hay que **sumar una entrada cada vez que se agrega algo visible**.
+Actions → "Novedades del sitio" → Run workflow: modo `nuevas` (las que todavía no se anunciaron; se recuerda hasta dónde en la rama `datos`;
+la primera vez manda las últimas 5) o `ultimas` (las últimas N sin tocar lo recordado). Probar sin enviar: `python scripts/anunciar.py --ultimas 3 --no-enviar`.
+
 ## Vista previa al compartir (WhatsApp, Telegram…)
 
 Cada club tiene `clubes/<slug>/og.png` (1200x630) y la portada `config/og.png`. Se generan con

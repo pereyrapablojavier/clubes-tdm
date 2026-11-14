@@ -840,6 +840,11 @@
           ${step(3, "Elegí <b>Agregar a pantalla de inicio</b> y después <b>Agregar</b>.")}
         </ol></div>
       </div>
+      ${K().qr ? `<div class="card section" style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">
+        <img src="assets/qr.png" alt="Código QR para abrir ${esc(K().corto)}" width="180" height="180" style="border-radius:10px;background:#fff;flex:none">
+        <div style="flex:1;min-width:200px"><h3>📷 Escaneá el QR</h3>
+          <p class="muted">Apuntá la cámara de tu celular al código: se abre el sitio y desde ahí seguís los pasos de arriba para instalar la app.</p>
+          <p class="small muted">Podés mostrárselo a otros jugadores directamente desde esta pantalla.</p></div></div>` : ""}
       <div class="card"><h3>🔗 Compartí el link</h3>
         <p style="word-break:break-all"><a href="${esc(url)}">${esc(url)}</a></p>
         <p><button class="btn ghost" id="shareBtn">Compartir / copiar link</button> <span class="small muted" id="shareMsg"></span></p>

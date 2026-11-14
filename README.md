@@ -83,6 +83,12 @@ separados por coma (se ven en la URL de la ficha: `…#/jugador/<código>`; solo
 la ficha de los nuevos. La acción `resumen` manda la ficha actual de los seguidos (o solo de los códigos que pongas) y `lista` muestra a quién
 se sigue. La lista agregada se guarda en la rama `datos` (`<slug>/seguir.json`) y se suma a la de `club.json`.
 
+## QR de la app
+
+`clubes/<slug>/qr.png` se muestra en la sección "En tu celular" del club (si no existe, no se muestra nada). Se genera con
+`python scripts/qr_image.py [--club <slug>]` (requiere `pip install qrcode pillow`): es un QR directo a la dirección del club con el escudo
+al centro, sin servicios intermedios, así que no vence. Si cambia la dirección del sitio (`url`/`base` en `config/sitio.json`), hay que volver a generarlo.
+
 ## Vista previa al compartir (WhatsApp, Telegram…)
 
 Cada club tiene `clubes/<slug>/og.png` (1200x630) y la portada `config/og.png`. Se generan con

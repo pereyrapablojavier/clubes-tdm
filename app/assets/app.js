@@ -154,7 +154,7 @@
         <p>${K().zona ? esc(K().zona) + ". " : ""}Plantel, ratings y estadísticas de todo el club en el circuito TMT y en FETEMBA.</p></div>
       </div>
       <div class="grid tiles">
-        ${tile(fmt(s.total_players), "Jugadores", `${s.tmt_players} en TMT · ${s.fet_players} en FETEMBA`)}
+        ${tile(fmt(s.total_players), `Jugadores ${info(`Personas distintas del club: ${s.tmt_players} figuran en TMT + ${s.fet_players} en FETEMBA, contando una sola vez a quienes están en las dos fuentes (${s.tmt_players + s.fet_players - s.total_players} en ambas). Es decir ${s.tmt_players} + ${s.fet_players} − ${s.tmt_players + s.fet_players - s.total_players} = ${s.total_players}. Se considera la misma persona si coinciden apellido y primer nombre.`)}`, `${s.tmt_players} en TMT · ${s.fet_players} en FETEMBA`)}
         ${tile(CLUB.tmt_rank ? CLUB.tmt_rank + "°" : "–", "Ranking de clubes TMT", `Rating total ${fmt(s.tmt_rating_total)}`)}
         ${tile(fmt(s.tmt_rating_avg), "Rating promedio TMT", `Edad promedio ${s.avg_age ?? "–"} años`)}
         ${tile(fmt(y1.partidos), "Partidos último año", `${pct(y1.ganados, y1.partidos)}% ganados`)}

@@ -1,0 +1,75 @@
+name: Novedades del sitio
+
+# Manda por Telegram las novedades que se agregaron al sitio (lo que ven los usuarios), escritas en config/novedades.json.
+#   Actions → "Novedades del sitio" → Run workflow:
+#     - modo "nuevas": las que todavía no se anunciaron (la primera vez, las últimas 5). Se recuerda hasta dónde se anunció.
+#     - modo "ultimas": las últimas N (campo "cantidad"), sin importar lo ya anunciado; no cambia lo recordado.
+# No publica el sitio. Sin Telegram configurado, solo muestra el mensaje en el resumen de la corrida.
+
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: "nuevas = lo que falta anunciar · ultimas = las últimas N"
+        type: choice
+        options: [nuevas, ultimas]
+        default: nuevas
+      cantidad:
+        description: "Cuántas mandar (en 'ultimas'; en 'nuevas' solo cuenta la primera vez)"
+        type: string
+        default: "5"
+
+permissions:
+  contents: write
+
+jobs:
+  anunciar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: publicar
+      cancel-in-progress: false
+    env:
+      CLUBES_DATA: ${{ github.workspace }}/.datos
+      MODO: ${{ inputs.modo }}
+      CANTIDAD: ${{ inputs.cantidad }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+
+      - name: Traer los datos guardados (rama datos)
+        run: |
+          git fetch --depth 1 origin datos
+          git worktree add "$CLUBES_DATA" FETCH_HEAD
+          git -C "$CLUBES_DATA" switch -c datos
+
+      - name: Mandar las novedades
+        run: |
+          set -o pipefail  # que falle la corrida si falla el script (no solo tee)
+          n="${CANTIDAD:-5}"
+          case "$n" in ''|*[!0-9]*) echo "La cantidad tiene que ser un número"; exit 1;; esac
+          if [ "$MODO" = "nuevas" ]; then
+            python scripts/anunciar.py --nuevas --cantidad "$n" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            python scripts/anunciar.py --ultimas "$n" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Guardar hasta dónde se anunció (rama datos)
+        if: env.MODO == 'nuevas'
+        run: |
+          cd "$CLUBES_DATA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then echo "Nada que guardar"; exit 0; fi
+          git commit -q -m "Novedades del sitio anunciadas ($(date -u +%Y-%m-%d))"
+          for i in 1 2 3; do
+            git push -q origin HEAD:datos && exit 0
+            git fetch -q origin datos && git rebase -q FETCH_HEAD || exit 1
+          done
+          exit 1

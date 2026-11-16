@@ -11,6 +11,7 @@
   
   // ---------- helpers
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const na = (v) => (v == null || v === "" ? "n/a" : v); // valor que puede faltar: se muestra "n/a" y nunca "null"
   const fmt = (n) => (n == null || n === "" ? "–" : Number(n).toLocaleString("es-AR"));
   const pct = (g, p) => (p ? Math.round((100 * g) / p) : null);
   const fdate = (d) => { if (!d) return "–"; const [y, m, dd] = d.split("-"); return `${dd}/${m}/${y}`; };
@@ -65,12 +66,29 @@
   const favs = {
     list() {
       // favoritos guardados con la clave vieja del sitio de un solo club (club.json -> favoritos_clave_vieja)
-      if (store.get(K().slug + ".favs", null) == null && K().favoritos_clave_vieja) store.set(K().slug + ".favs", store.get(K().favoritos_clave_vieja, []));
-      return (store.get(K().slug + ".favs", []) || []).filter((id) => typeof id === "string");
+      // (también si la clave nueva quedó guardada vacía: pasa si se entró al sitio nuevo antes de marcar favoritos en el viejo)
+      const aca = store.get(K().slug + ".favs", null);
+      if ((!Array.isArray(aca) || !aca.length) && K().favoritos_clave_vieja) {
+        const viejos = (store.get(K().favoritos_clave_vieja, []) || []).filter((id) => typeof id === "string");
+        if (viejos.length) { store.set(K().slug + ".favs", viejos); return viejos; }
+      }
+      return (Array.isArray(aca) ? aca : []).filter((id) => typeof id === "string");
     },
     has: (id) => favs.list().includes(id),
     toggle(id) { const l = favs.list(); const i = l.indexOf(id); if (i >= 0) l.splice(i, 1); else l.push(id); store.set(K().slug + ".favs", l); return i < 0; },
   };
+  // Red de seguridad: si algún dato falta y se escapa un "null", "undefined" o "NaN" a la pantalla, se muestra "n/a".
+  (() => {
+    const RX = /\b(null|undefined|NaN)\b/;
+    const limpiar = () => {
+      const w = document.createTreeWalker($app, NodeFilter.SHOW_TEXT);
+      for (let n = w.nextNode(); n; n = w.nextNode()) if (RX.test(n.nodeValue)) n.nodeValue = n.nodeValue.replace(/\b(null|undefined|NaN)\b/g, "n/a");
+    };
+    let t = 0;
+    new MutationObserver(() => { cancelAnimationFrame(t); t = requestAnimationFrame(limpiar); }).observe($app, { childList: true, subtree: true, characterData: true });
+  })();
+  // pide al navegador que no borre los datos del sitio (favoritos) cuando le falta espacio
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) { /* no pasa nada */ }
   // ícono de Instagram (línea simple; toma el color del texto)
   const IG_ICON = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>`;
   const favLabel = (on) => (on ? "★ En Favoritos" : "☆ Agregar a Favoritos");
@@ -550,7 +568,7 @@
             <div class="fecha"><b>${x ? x.getDate() : "?"}</b><span>${x ? MESES[x.getMonth()].slice(0, 3) : ""}</span></div>
             <div class="grow"><div class="pname">${esc(u.name)}</div>
               <div class="small muted">${longDate(u.date)} · 📍 ${esc(u.lugar || u.sede || "")}${u.dir ? ` — ${esc(u.dir)}` : ""}</div>
-              ${u.divs.length ? `<div class="chips" style="margin-top:8px">${u.divs.map((d) => `<span class="badge c${esc(d.div)}" title="${esc(d.formato)} · ${d.mesas} mesas">${esc(d.div)} · ${esc(d.hora)} hs · ${d.cupos} cupos</span>`).join("")}</div>` : ""}
+              ${u.divs.length ? `<div class="chips" style="margin-top:8px">${u.divs.map((d) => `<span class="badge c${esc(d.div)}" title="${esc(d.formato)} · ${na(d.mesas)} mesas">${esc(d.div)} · ${esc(d.hora)} hs · ${na(d.cupos)} cupos</span>`).join("")}</div>` : ""}
               ${u.precio.length ? `<div class="small muted" style="margin-top:6px">💲 ${u.precio.map(esc).join(" · ")}</div>` : ""}
               <div class="small" style="margin-top:8px;display:flex;gap:12px;flex-wrap:wrap">
                 <a target="_blank" rel="noopener" href="${TMT}/jugadores_inscripciones.asp?torneo_cod=${esc(u.code)}">✍️ Inscribirme</a>
@@ -671,10 +689,10 @@
           const key = c.camp + "-" + i;
           return `<div class="card eqcard"><div class="card-head"><div><h3 style="margin:0">${esc(c.team)}</h3>
             <div class="small muted">${esc(c.cat)}${c.fase ? " · " + esc(c.fase) : ""}${c.zona ? " · " + esc(c.zona) : ""}</div></div>
-            ${c.pos ? `<div class="pos ${c.pos === 1 ? "p1" : ""}"><b>${c.pos}°</b><span>de ${c.n}</span></div>` : `<span class="badge">Play Off</span>`}</div>
+            ${c.pos ? `<div class="pos ${c.pos === 1 ? "p1" : ""}"><b>${c.pos}°</b><span>de ${na(c.n)}</span></div>` : `<span class="badge">Play Off</span>`}</div>
             <div class="small" style="margin:8px 0">${c.pts != null ? `<b>${c.pts}</b> pts · ` : ""}${c.pg}G · ${c.pp}P</div>
             ${c.tabla.length ? `<details ${eqState.open[key + "t"] ? "open" : ""} data-k="${key}t"><summary class="small linkish">Ver tabla de posiciones</summary><div class="tbl-wrap"><table class="small"><thead><tr><th>#</th><th>Equipo</th><th class="r">Pts</th><th class="r">PJ</th><th class="r">G</th><th class="r">P</th><th class="r">Dif</th></tr></thead><tbody>
-              ${c.tabla.map((r) => `<tr class="${esMiEquipo(r.club) ? "spinrow" : ""}"><td class="num">${r.pos}</td><td>${esc(r.club)}</td><td class="r num"><b>${r.pts}</b></td><td class="r num">${r.pj}</td><td class="r num">${r.pg}</td><td class="r num">${r.pp}</td><td class="r num">${signed(r.dif)}</td></tr>`).join("")}
+              ${c.tabla.map((r) => `<tr class="${esMiEquipo(r.club) ? "spinrow" : ""}"><td class="num">${na(r.pos)}</td><td>${esc(r.club)}</td><td class="r num"><b>${na(r.pts)}</b></td><td class="r num">${na(r.pj)}</td><td class="r num">${na(r.pg)}</td><td class="r num">${na(r.pp)}</td><td class="r num">${signed(r.dif)}</td></tr>`).join("")}
             </tbody></table></div></details>` : ""}
             <div style="margin-top:8px">${c.encuentros.map(encuentroHTML).join("")}</div></div>`; }).join("")}</div>
         ${jug.length ? `<div class="card section"><h3>👥 Jugadores de ${esc(K().corto)}</h3><p class="small muted">Partidos individuales y de dobles en ${esc(camps.find(([k]) => k === eqState.camp)?.[1] || "")}${eqState.cat ? " · " + esc(eqState.cat) : ""}.</p>
@@ -864,12 +882,15 @@
   // ---------- Favoritos (jugadores guardados en este dispositivo)
   async function viewPerfil() {
     killCharts();
-    const ids = favs.list().filter((id) => byId(id));
+    const guardados = favs.list(), ids = guardados.filter((id) => byId(id));
+    const ausentes = guardados.length - ids.length; // siguen guardados; solo que hoy no figuran en los datos del club
+    const avisoAus = ausentes ? `<p class="small muted" style="margin-top:14px">ℹ️ ${ausentes === 1 ? "Un favorito guardado no figura" : ausentes + " favoritos guardados no figuran"} en los datos actuales del club (por ejemplo, si el jugador cambió de club). Se conserva${ausentes === 1 ? "" : "n"} guardado${ausentes === 1 ? "" : "s"} y vuelve${ausentes === 1 ? "" : "n"} a aparecer si el jugador regresa al plantel.</p>` : "";
     if (ids.length) {
       let sel = store.get(K().slug + ".perfilSel", null);
       if (!ids.includes(sel)) sel = ids[0];
       document.title = `Favoritos · ${niceName(byId(sel).name)} · ${K().corto}`;
       await viewJugador(sel, ids);
+      if (avisoAus) $app.insertAdjacentHTML("beforeend", `<div class="section">${avisoAus}</div>`);
       return;
     }
     document.title = `Favoritos · ${K().nombre}`;
@@ -877,7 +898,7 @@
       <p class="muted" style="max-width:640px">Agregá tu ficha (o la de los jugadores que seguís) y la vas a tener siempre a mano acá. Buscá un jugador y tocá <b>☆ Agregar</b>, o entrá a cualquier ficha y tocá <b>☆ Agregar a Favoritos</b>.</p>
       <div class="filters"><input id="pfQ" type="search" placeholder="Buscar jugador…" autocomplete="off"></div>
       <ul class="list card" id="pfRes" style="margin-top:12px"></ul>
-      <p class="small muted">Se guarda solo en este celular o computadora, no hace falta registrarse. Si borrás los datos del navegador, se pierde.</p></div>`;
+      <p class="small muted">Se guarda solo en este celular o computadora, no hace falta registrarse. Si borrás los datos del navegador, se pierde.</p>${avisoAus}</div>`;
     const norm = (x) => x.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
     const res = document.getElementById("pfRes");
     const draw = (q) => {

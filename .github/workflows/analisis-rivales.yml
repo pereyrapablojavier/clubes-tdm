@@ -1,0 +1,74 @@
+name: Análisis de rivales
+
+# Manda por Telegram el análisis de los rivales de la Liga de Equipos: cómo les fue en la fase anterior, sus jugadores (rating de FETEMBA,
+# singles y dobles), claves y últimos encuentros. Las divisiones a analizar se eligen en clubes/<slug>/club.json ("scouting_liga").
+#   Actions → "Análisis de rivales" → Run workflow (se puede elegir un club).
+# Primero baja de nuevo los datos de los rivales (unos 30 segundos); si FETEMBA no responde, usa los últimos que hay.
+# No publica el sitio. Sin Telegram configurado, solo muestra el análisis en el resumen de la corrida.
+
+on:
+  workflow_dispatch:
+    inputs:
+      club:
+        description: "Club (slug). Vacío = todos los que tengan scouting_liga"
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  analizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: publicar
+      cancel-in-progress: false
+    env:
+      CLUBES_DATA: ${{ github.workspace }}/.datos
+      CLUB: ${{ inputs.club }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+
+      - name: Traer los datos guardados (rama datos)
+        run: |
+          git fetch --depth 1 origin datos
+          git worktree add "$CLUBES_DATA" FETCH_HEAD
+          git -C "$CLUBES_DATA" switch -c datos
+
+      - name: Bajar los datos de los rivales
+        id: bajar
+        continue-on-error: true
+        run: python scripts/equipos.py --solo rivales ${CLUB:+--club "$CLUB"}
+
+      - name: Guardar los datos (rama datos)
+        if: steps.bajar.outcome == 'success'
+        run: |
+          cd "$CLUBES_DATA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then echo "Datos sin cambios"; exit 0; fi
+          git commit -q -m "Datos (rivales de la Liga): ${CLUB:-todos los clubes} ($(date -u +%Y-%m-%d))"
+          for i in 1 2 3; do
+            git push -q origin HEAD:datos && exit 0
+            git fetch -q origin datos && git rebase -q FETCH_HEAD || exit 1
+          done
+          exit 1
+
+      - name: Aviso si no se pudieron actualizar los rivales
+        if: steps.bajar.outcome == 'failure'
+        run: |
+          echo "::warning::No se pudieron bajar los datos de los rivales; el análisis usa los últimos guardados."
+          echo "⚠️ No se pudieron bajar los datos de los rivales: el análisis usa los últimos guardados." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Mandar el análisis
+        run: |
+          set -o pipefail
+          python scripts/analisis_rivales.py ${CLUB:+--club "$CLUB"} | tee -a "$GITHUB_STEP_SUMMARY"

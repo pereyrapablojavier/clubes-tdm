@@ -233,6 +233,22 @@ def discover(lw, snaps):
     return (sorted(set(liga)) or LIGA_FALLBACK), (sorted(set(copa)) or COPA_FALLBACK)
 
 
+def bajar_sets(lw, snaps, prev):
+    """Sets y ganador de cada partido de los encuentros ya jugados. Reutiliza lo ya bajado (prev)."""
+    def sets_of(item):
+        eid, snap = item
+        d = unwrap(snap["data"]).get("encuentro") or {}
+        if not ((d.get("res_local") or 0) + (d.get("res_visitante") or 0)):
+            return eid, None
+        if str(eid) in prev and prev[str(eid)]:
+            return eid, prev[str(eid)]
+        _, fx = lw.call(snap, [{"path": "", "method": "VerResultados", "params": []}])
+        return eid, parse_sets(fx.get("html", ""))
+
+    with ThreadPoolExecutor(3) as ex:
+        return {str(k): v for k, v in ex.map(sets_of, snaps.items()) if v}
+
+
 def scouting_objetivos(zones):
     """Zonas actuales del club en las divisiones a mirar (club.json -> scouting_liga): la competencia y fase más recientes
     de cada división. Devuelve [{camp, cat, fase, zona, titulo, spin, rivales}]."""
@@ -296,10 +312,22 @@ def scrape_rivales(lw, vs, zones, liga):
                     for lado, club in (("l", e["local"]), ("v", e["visit"])):
                         if club in nombres:
                             ids.update(str(x[0]) for x in (p.get(lado + "1"), p.get(lado + "2")) if x)
+        # jugadores del propio club en esa competencia y división (para comparar la fuerza de los equipos)
+        propios = set()
+        for z in zones:
+            if z.get("tipo") == "liga" and z.get("camp") == ob["camp"] and z.get("cat") == ob["cat"]:
+                for e in z["encuentros"]:
+                    for p in e["partidos"]:
+                        for lado, club in (("l", e["local"]), ("v", e["visit"])):
+                            if is_spin(club):
+                                propios.update(str(x[0]) for x in (p.get(lado + "1"), p.get(lado + "2")) if x)
+        todos = sorted(ids | propios)
         with ThreadPoolExecutor(3) as ex:
-            jug = {i: d for i, d in zip(sorted(ids), ex.map(lambda i: fet_jugador(lw.s, i), sorted(ids))) if d}
-        resultado.append({**ob, "zonas": zs, "jugadores": jug})
-        print(f"Scouting {ob['titulo']} · {ob['zona']}: {len(nombres)} rivales, {len(zs)} zonas, {len(jug)}/{len(ids)} jugadores")
+            info = {i: d for i, d in zip(todos, ex.map(lambda i: fet_jugador(lw.s, i), todos)) if d}
+        jug = {i: d for i, d in info.items() if i in ids}
+        mios = {i: d for i, d in info.items() if i in propios}
+        resultado.append({**ob, "zonas": zs, "jugadores": jug, "propios": mios})
+        print(f"Scouting {ob['titulo']} · {ob['zona']}: {len(nombres)} rivales, {len(zs)} zonas, {len(jug)}/{len(ids)} jugadores rivales, {len(mios)}/{len(propios)} propios")
     return resultado, snaps
 
 
@@ -341,6 +369,30 @@ def scrape_proximos():
     raw["proximos_updated"] = datetime.now(timezone.utc).isoformat()
     path.write_text(json.dumps(raw, ensure_ascii=False))
     print(f"FETEMBA Equipos: {len(upcoming)} próximos partidos")
+
+
+def scrape_solo_rivales():
+    """Solo el scouting de rivales (rápido): usa las zonas del club ya guardadas y actualiza rivales y sets en eq_raw.json."""
+    path = DATA / "eq_raw.json"
+    if not SCOUTING:
+        print("El club no tiene 'scouting_liga' configurado.")
+        return
+    if not path.exists():
+        print("FETEMBA Equipos: todavía no hay datos completos de este club; se baja todo.")
+        return scrape_club()
+    raw = json.loads(path.read_text())
+    lw = Livewire()
+    snaps = snapshots(lw.page("/resultados"))
+    vs = next((s for s in snaps if s["memo"]["name"] == "comppublicos.visorswitch"), None)
+    if not vs or not lw.token:
+        raise RuntimeError("FETEMBA Equipos: no se pudo leer la página; se conservan los datos anteriores.")
+    liga, _ = discover(lw, snaps)
+    rivales, rsnaps = scrape_rivales(lw, vs, raw.get("zones") or [], liga)
+    sets = dict(raw.get("sets") or {})
+    sets.update(bajar_sets(lw, rsnaps, sets))
+    raw.update({"rivales": rivales, "sets": sets, "rivales_updated": datetime.now(timezone.utc).isoformat()})
+    path.write_text(json.dumps(raw, ensure_ascii=False))
+    print(f"FETEMBA Equipos: scouting de {len(rivales)} zonas")
 
 
 def scrape_club():
@@ -388,18 +440,7 @@ def scrape_club():
             print("Scouting de rivales no disponible, se conserva lo anterior:", e, file=sys.stderr)
             rivales = prev_raw.get("rivales") or []
 
-    def sets_of(item):
-        eid, snap = item
-        d = unwrap(snap["data"]).get("encuentro") or {}
-        if not ((d.get("res_local") or 0) + (d.get("res_visitante") or 0)):
-            return eid, None
-        if str(eid) in prev and prev[str(eid)]:
-            return eid, prev[str(eid)]
-        _, fx = lw.call(snap, [{"path": "", "method": "VerResultados", "params": []}])
-        return eid, parse_sets(fx.get("html", ""))
-
-    with ThreadPoolExecutor(3) as ex:
-        sets = {str(k): v for k, v in ex.map(sets_of, spin_snaps.items()) if v}
+    sets = bajar_sets(lw, spin_snaps, prev)
 
     # próximos partidos (si no se pueden leer, se conservan los de la descarga anterior)
     upcoming = fetch_proximos(lw)
@@ -421,8 +462,8 @@ def scrape_club():
 def main():
     ap = argparse.ArgumentParser(description="Liga de Equipos y Copa de Clubes de cada club (fetembaequipos.ar).")
     clubcfg.add_club_arg(ap)
-    ap.add_argument("--solo", choices=["todo", "proximos"], default="todo",
-                    help="'proximos': solo los próximos partidos (rápido); 'todo' (por defecto): tablas, resultados y próximos")
+    ap.add_argument("--solo", choices=["todo", "proximos", "rivales"], default="todo",
+                    help="'proximos': solo los próximos partidos (rápido); 'rivales': solo el scouting de rivales; 'todo' (por defecto): tablas, resultados y próximos")
     args = ap.parse_args()
     fallas = []
     for cfg in clubcfg.selected(args):
@@ -432,7 +473,8 @@ def main():
             continue
         configure(cfg)
         try:
-            if (scrape_proximos() if args.solo == "proximos" else scrape_club()) is False:
+            fn = {"proximos": scrape_proximos, "rivales": scrape_solo_rivales}.get(args.solo, scrape_club)
+            if fn() is False:
                 print("FETEMBA Equipos: los próximos partidos no se pudieron actualizar.", file=sys.stderr)
                 fallas.append(cfg["slug"])
         except Exception as e:  # noqa

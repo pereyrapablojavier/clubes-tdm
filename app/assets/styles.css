@@ -319,18 +319,3 @@ details.circ .fecha span { font-size: 10px; letter-spacing: .5px; }
 .info { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; margin-left: 4px; border-radius: 50%; border: 1px solid var(--linea); background: var(--celeste-3); color: var(--azul); font: italic 700 10px/1 Georgia, serif; vertical-align: middle; cursor: help; text-transform: none; letter-spacing: 0; user-select: none; }
 .info:hover, .info:focus { background: var(--azul); color: #fff; outline: none; }
 .tipbox { position: fixed; z-index: 1000; display: none; max-width: min(300px, calc(100vw - 16px)); padding: 9px 11px; border-radius: 10px; background: #0E1B2A; color: #fff; font: 400 12.5px/1.4 "Inter", system-ui, sans-serif; box-shadow: 0 6px 20px rgba(0,0,0,.28); pointer-events: none; text-transform: none; letter-spacing: 0; }
-
-/* scouting de rivales (Liga de Equipos) */
-details.rival { border: 1px solid var(--linea); border-radius: 12px; padding: 4px 12px 10px; background: var(--card); }
-details.rival > summary { cursor: pointer; padding: 8px 0; list-style: none; }
-details.rival > summary::-webkit-details-marker { display: none; }
-details.rival > summary::before { content: "▸ "; color: var(--azul); }
-details.rival[open] > summary::before { content: "▾ "; }
-details.rival h4 { font-size: 14px; margin: 12px 0 4px; }
-details.enc > summary { cursor: pointer; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; list-style: none; }
-details.enc > summary::-webkit-details-marker { display: none; }
-@media (max-width: 560px) { details.rival .hide-s { display: none; } details.rival { padding: 4px 8px 8px; } }
-details.rival .show-s { display: none; }
-@media (max-width: 560px) { details.rival .show-s { display: block; } }
-details.rival td:first-child { white-space: normal; }
-@media (max-width: 560px) { details.rival th, details.rival td { padding: 8px 6px; } }

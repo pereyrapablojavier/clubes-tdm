@@ -96,13 +96,14 @@ en `config/novedades.json` (`id` creciente, `fecha`, `icono`, `titulo`, `detalle
 Actions → "Novedades del sitio" → Run workflow: modo `nuevas` (las que todavía no se anunciaron; se recuerda hasta dónde en la rama `datos`;
 la primera vez manda las últimas 5) o `ultimas` (las últimas N sin tocar lo recordado). Probar sin enviar: `python scripts/anunciar.py --ultimas 3 --no-enviar`.
 
-## Scouting de rivales (Liga de Equipos)
+## Análisis de rivales por Telegram (Liga de Equipos)
 
-En `clubes/<slug>/club.json`, `"scouting_liga": ["Octava"]` indica las divisiones de la Liga de las que se arma el scouting (el prefijo del nombre de la
-división, sin importar mayúsculas ni tildes). `equipos.py` toma la zona más reciente del club en esa división, y de cada rival baja sus zonas, tablas y
-encuentros de **todas las fases** de la competencia (con los sets de cada partido) y los datos públicos de sus jugadores en FETEMBA (rating, puesto,
-últimos rankings; **no se guarda la edad**). En el sitio aparece en Liga de Equipos, dentro de la división, como "Rivales de …". Corre con la Action
-"Actualizar liga-copa". Si la descarga de rivales falla, se conservan los datos anteriores y el resto se actualiza igual.
+No está en el sitio: llega por Telegram. En `clubes/<slug>/club.json`, `"scouting_liga": ["Octava"]` indica las divisiones a analizar (prefijo del nombre,
+sin importar mayúsculas ni tildes). Actions → **Análisis de rivales** → Run workflow baja de nuevo los datos de los rivales de la zona actual
+(`equipos.py --solo rivales`: sus zonas, tablas y encuentros de todas las fases, los sets de cada partido y el rating público de sus jugadores en
+FETEMBA; **no se guarda la edad**) y manda: un resumen con la comparación de fuerza (rating FETEMBA promedio de los 4 que más jugaron) y un mensaje
+por rival con su fase anterior, jugadores (rating, singles y dobles), claves y últimos encuentros. Probar sin enviar:
+`python scripts/analisis_rivales.py --no-enviar`. La descarga completa de la Liga (Action "Actualizar liga-copa") también actualiza estos datos.
 
 ## Vista previa al compartir (WhatsApp, Telegram…)
 

@@ -643,37 +643,6 @@
         <b class="num">${p.sets.length ? p.sets.filter((x) => +x.split("-")[0] > +x.split("-")[1]).length + "-" + p.sets.filter((x) => +x.split("-")[0] < +x.split("-")[1]).length : ""}</b><span></span></div>`).join("") : `<p class="small muted">Sin formaciones cargadas.</p>`}
       ${e.sede ? `<p class="small muted" style="margin:8px 0 0">📍 ${esc(e.sede)}${e.mesa ? " · Mesa " + esc(e.mesa) : ""}</p>` : ""}</div></details>`;
   }
-  // Rivales de la zona actual (scouting): cómo les fue antes, sus jugadores y sus últimos encuentros
-  const scoutHTML = (list) => list.map((s) => {
-    const dmy = (f) => (f ? fdate(f).slice(0, 5) : "–");
-    const jug = (r) => {
-      if (!r.jugadores.length) return `<p class="small muted">Todavía no hay partidos registrados de este equipo.</p>`;
-      const topR = Math.max(...r.jugadores.map((j) => j.rating || 0));
-      return `<div class="tbl-wrap"><table class="small"><thead><tr><th>Jugador</th>
-        <th class="r">Rating ${info("Rating FETEMBA (ranking oficial de FETEMBA, no el de TMT). El número chico es lo que subió (+) o bajó (−) en los últimos rankings publicados.")}</th>
-        <th class="r hide-s">Puesto</th><th class="r hide-s">Singles</th><th class="r hide-s">Dobles</th><th class="r hide-s">Enc.</th></tr></thead><tbody>
-        ${r.jugadores.map((j) => `<tr><td>${esc(niceName(j.name))}${j.rating && j.rating === topR ? ` <span title="El de mayor rating del equipo">⭐</span>` : ""}<div class="small muted show-s">Singles ${j.s_w}-${j.s_l} · Dobles ${j.d_w}-${j.d_l}</div></td>
-          <td class="r num"><b>${fmt(j.rating)}</b>${j.delta ? ` <span class="small">${signed(j.delta)}</span>` : ""}</td>
-          <td class="r num muted hide-s">${fmt(j.pos)}</td><td class="r num hide-s">${j.s_w}-${j.s_l}</td><td class="r num hide-s">${j.d_w}-${j.d_l}</td><td class="r num hide-s">${j.enc}</td></tr>`).join("")}
-        </tbody></table></div>`;
-    };
-    const encs = (r) => r.encuentros.length ? r.encuentros.map((e) => `<details class="enc"><summary class="small">
-        <span class="wl ${e.res === "G" ? "G" : e.res === "P" ? "P" : ""}">${e.res || "–"}</span> ${dmy(e.fecha)} · ${e.local ? "vs" : "@"} ${esc(e.rival)}
-        ${e.jugado ? `<b class="num">${e.gf}-${e.gc}</b>` : `<span class="muted">sin resultado</span>`} <span class="muted">· ${esc(e.fase)}</span></summary>
-        ${e.partidos.length ? `<div class="body">${e.partidos.map((p) => `<div class="match"><span class="wl ${p.w === true ? "G" : p.w === false ? "P" : ""}">${p.w == null ? "–" : p.w ? "G" : "P"}</span>
-          <span class="ellipsis">${p.suyos.map((x) => esc(niceName(x[1]))).join(" / ")} <span class="muted">vs</span> ${p.otros.map((x) => esc(niceName(x[1]))).join(" / ")}
-          ${p.sets.length ? `<br><span class="sets">${p.sets.map(esc).join("  ")}</span>` : ""}</span><span class="small muted">${p.t === "D" ? "Dobles" : "Single"}</span></div>`).join("")}</div>`
-          : `<p class="small muted" style="margin:6px 0">Sin detalle de partidos.</p>`}</details>`).join("") : `<p class="small muted">Sin encuentros registrados.</p>`;
-    const previa = (r) => { const x = r.etapas.filter((e) => !e.actual); return x.length ? x.map((e) => `<span class="badge">${esc(e.fase)} · ${esc(e.zona)}: ${e.pos ? e.pos + "° · " : ""}${na(e.pts)} pts</span>`).join(" ") : `<span class="muted small">Sin fase anterior</span>`; };
-    return `<div class="card section"><h3>🔍 Rivales de ${esc(s.spin)} · ${esc(s.cat)}</h3>
-      <p class="small muted">${esc(s.comp)} · ${esc(s.fase)} · ${esc(s.zona)}. Cómo les fue a los equipos que te tocan en la fase anterior, quiénes juegan y sus últimos encuentros.
-      Los datos salen de FETEMBA Equipos y del ranking de FETEMBA; se actualizan con cada descarga. En los encuentros, <b>vs</b> es de local y <b>@</b> de visitante.</p>
-      ${s.rivales.map((r, i) => `<details class="rival" ${s.rivales.length === 1 || eqState.open["sc" + s.cat + i] ? "open" : ""} data-k="sc${esc(s.cat)}${i}" style="margin-top:10px">
-        <summary><b>${esc(r.club)}</b> <span class="small muted">· ${r.g}G ${r.p}P${r.e ? " " + r.e + "E" : ""} en encuentros jugados</span></summary>
-        <div style="margin:8px 0">${previa(r)}</div>
-        <h4 style="margin:12px 0 4px">Jugadores</h4>${jug(r)}
-        <h4 style="margin:12px 0 4px">Últimos encuentros</h4>${encs(r)}</details>`).join("")}</div>`;
-  }).join("");
   async function viewEquipos(tipo) {
     $app.innerHTML = `<div class="loading">Cargando…</div>`;
     let E;
@@ -726,7 +695,6 @@
               ${c.tabla.map((r) => `<tr class="${esMiEquipo(r.club) ? "spinrow" : ""}"><td class="num">${na(r.pos)}</td><td>${esc(r.club)}</td><td class="r num"><b>${na(r.pts)}</b></td><td class="r num">${na(r.pj)}</td><td class="r num">${na(r.pg)}</td><td class="r num">${na(r.pp)}</td><td class="r num">${signed(r.dif)}</td></tr>`).join("")}
             </tbody></table></div></details>` : ""}
             <div style="margin-top:8px">${c.encuentros.map(encuentroHTML).join("")}</div></div>`; }).join("")}</div>
-        ${tipo === "liga" ? scoutHTML((E.scouting || []).filter((x) => x.camp === eqState.camp && (!eqState.cat || x.cat === eqState.cat))) : ""}
         ${jug.length ? `<div class="card section"><h3>👥 Jugadores de ${esc(K().corto)}</h3><p class="small muted">Partidos individuales y de dobles en ${esc(camps.find(([k]) => k === eqState.camp)?.[1] || "")}${eqState.cat ? " · " + esc(eqState.cat) : ""}.</p>
           <div class="tbl-wrap"><table><thead><tr><th>Jugador</th><th class="r">Singles</th><th class="r">Dobles</th><th class="r">Total</th><th class="r">%</th><th class="r">Encuentros</th></tr></thead><tbody>
           ${jug.map((j) => `<tr><td>${j.id ? plink(j.id, j.name) : esc(j.name)}</td><td class="r num">${j.s_w}-${j.s_l}</td><td class="r num">${j.d_w}-${j.d_l}</td><td class="r num"><b>${j.w}-${j.l}</b></td><td class="r num">${pct(j.w, j.w + j.l) ?? "–"}%</td><td class="r num">${j.enc}</td></tr>`).join("")}

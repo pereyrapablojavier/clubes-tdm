@@ -14,6 +14,7 @@ import json
 import re
 import sys
 import time
+import unicodedata
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
@@ -26,6 +27,8 @@ BASE = "https://fetembaequipos.ar"
 # Del club que se está procesando (los fija configure())
 DATA = None
 SPIN_RE = None          # nombre de los equipos del club en fetembaequipos.ar
+SCOUTING = []           # divisiones de la Liga de las que se arma el "scouting" de rivales (club.json -> scouting_liga)
+FET_API = "https://fetemba.bsweb.com.ar/api/publico/jugadores/{}"
 
 # Respaldo por si el menú del sitio no responde: (campeonato, categoría, fase) de la temporada 2026
 LIGA_FALLBACK = ([(5, c, f) for c, f in [(33, 68), (32, 67), (31, 66), (30, 65), (29, 64), (28, 63), (27, 62), (26, 61), (25, 60)]]
@@ -34,9 +37,14 @@ COPA_FALLBACK = [(4, 4, z) for z in (8, 9, 10, 11)] + [(4, 5, z) for z in (12, 1
 
 
 def configure(cfg):
-    global DATA, SPIN_RE
+    global DATA, SPIN_RE, SCOUTING
     DATA = clubcfg.data_dir(cfg["slug"])
     SPIN_RE = re.compile(cfg["fetemba"]["equipos"], re.I)
+    SCOUTING = [_norm(x) for x in cfg.get("scouting_liga") or []]
+
+
+def _norm(s):
+    return unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode().lower().strip()
 
 
 def is_spin(name):
@@ -118,8 +126,10 @@ def encuentro(d, fnames):
             "partidos": [partido(p) for p in d.get("partidos") or []]}
 
 
-def parse_visor(html, job):
-    """HTML del visor (zonas de una fase/etapa) -> zonas donde juega SPIN + encuentros de SPIN sin tabla (play off)."""
+def parse_visor(html, job, quien=None):
+    """HTML del visor (zonas de una fase/etapa) -> zonas donde juega SPIN + encuentros de SPIN sin tabla (play off).
+    'quien(nombre)' dice qué equipos interesan (por defecto, los del club); se usa también para mirar a los rivales."""
+    quien = quien or is_spin
     subs = snapshots(html)
     head = next((unwrap(s["data"]) for s in subs if re.search(r"visor\d$", s["memo"]["name"])), {})
     fechas = [f for v in (head.get("fechasPorZona") or {}).values() for f in (v or [])]
@@ -132,7 +142,7 @@ def parse_visor(html, job):
     tabs = [unwrap(s["data"]) for s in subs if "tabposiciones" in s["memo"]["name"]]
     for t in tabs:
         rows = t.get("resultados") or []
-        if not any(is_spin(r.get("nombre")) for r in rows):
+        if not any(quien(r.get("nombre")) for r in rows):
             continue
         names = {r.get("nombre") for r in rows}
         ids = zfechas.get(t.get("id_zona"))
@@ -144,7 +154,7 @@ def parse_visor(html, job):
             if ids and e.get("id_fecha") not in ids:
                 continue
             lst.append(encuentro(d, fnames))
-            if is_spin(e.get("club_local")) or is_spin(e.get("club_visitante")):
+            if quien(e.get("club_local")) or quien(e.get("club_visitante")):
                 spin_snaps[e.get("id")] = s
         zones.append({**job, "titulo": head.get("categ_fase") or head.get("etapa_zona") or "",
                       "zona": t.get("nombre_zona"), "id_zona": t.get("id_zona"),
@@ -157,7 +167,7 @@ def parse_visor(html, job):
     if not tabs:  # fases de play off: sin tabla, sólo cruces
         for s, d in encs:
             e = d.get("encuentro") or {}
-            if is_spin(e.get("club_local")) or is_spin(e.get("club_visitante")):
+            if quien(e.get("club_local")) or quien(e.get("club_visitante")):
                 loose.append({**job, "titulo": head.get("categ_fase") or "", **encuentro(d, fnames)})
                 spin_snaps[e.get("id")] = s
     return zones, loose, spin_snaps
@@ -221,6 +231,76 @@ def discover(lw, snaps):
     except Exception as e:  # noqa
         print("Menú de Copa no disponible, uso ids guardados:", e)
     return (sorted(set(liga)) or LIGA_FALLBACK), (sorted(set(copa)) or COPA_FALLBACK)
+
+
+def scouting_objetivos(zones):
+    """Zonas actuales del club en las divisiones a mirar (club.json -> scouting_liga): la competencia y fase más recientes
+    de cada división. Devuelve [{camp, cat, fase, zona, titulo, spin, rivales}]."""
+    por_div = {}
+    for z in zones:
+        if z.get("tipo") != "liga":
+            continue
+        div = _norm((z.get("titulo") or "").split(" / ")[0])
+        pref = next((p for p in SCOUTING if div.startswith(p)), None)
+        if pref:
+            por_div.setdefault(pref, []).append(z)
+    out = []
+    for zs in por_div.values():
+        mejor = max((z["camp"], z["fase"]) for z in zs)
+        for z in zs:
+            if (z["camp"], z["fase"]) == mejor:
+                names = [r["club"] for r in z["tabla"]]
+                out.append({"camp": z["camp"], "cat": z["cat"], "fase": z["fase"], "zona": z.get("zona"), "id_zona": z.get("id_zona"),
+                            "titulo": z.get("titulo"), "spin": [n for n in names if is_spin(n)], "rivales": [n for n in names if not is_spin(n)]})
+    return out
+
+
+def fet_jugador(session, pid):
+    """Datos públicos de un jugador en FETEMBA (rating, puesto, categoría, últimos rankings). No guarda la edad."""
+    for k in range(3):
+        try:
+            r = session.get(FET_API.format(pid), timeout=30)
+            if r.status_code == 404:
+                return None
+            if r.ok:
+                j = r.json()
+                v = j.get("vigente") or {}
+                return {"id": j.get("id"), "nombre": j.get("nombre"), "club": (j.get("club") or {}).get("nombre"), "rating": j.get("rating"),
+                        "pos": v.get("posicion"), "cat": v.get("categoria"), "publicado": v.get("publicado"),
+                        "hist": [[h.get("publicado"), h.get("puntos"), h.get("posicion")] for h in (j.get("historial") or [])][-5:]}
+        except Exception as e:  # noqa
+            print("jugador", pid, e, file=sys.stderr)
+        time.sleep(1 + k)
+    return None
+
+
+def scrape_rivales(lw, vs, zones, liga):
+    """Rivales de la zona actual en las divisiones a mirar: sus zonas, tablas y encuentros en TODAS las fases de esa competencia
+    y división, y los datos de FETEMBA de sus jugadores. Devuelve (lista, snapshots de encuentros para bajar los sets)."""
+    objetivos = scouting_objetivos(zones)
+    snaps, resultado = {}, []
+    for ob in objetivos:
+        nombres = set(ob["rivales"])
+        quien = lambda n, nombres=nombres: n in nombres  # noqa: E731
+        zs = []
+        for camp, cat, fase in sorted(f for f in liga if f[0] == ob["camp"] and f[1] == ob["cat"]):
+            _, fx = lw.call(vs, [{"path": "", "method": "__dispatch", "params": ["asignarParametros",
+                            {"var_id_campeonato": camp, "var_id_categoria": cat, "var_id_fase": fase}]}])
+            z, _, sn = parse_visor(fx.get("html", ""), {"tipo": "liga", "camp": camp, "cat": cat, "fase": fase}, quien)
+            zs += z
+            snaps.update(sn)
+        ids = set()
+        for z in zs:
+            for e in z["encuentros"]:
+                for p in e["partidos"]:
+                    for lado, club in (("l", e["local"]), ("v", e["visit"])):
+                        if club in nombres:
+                            ids.update(str(x[0]) for x in (p.get(lado + "1"), p.get(lado + "2")) if x)
+        with ThreadPoolExecutor(3) as ex:
+            jug = {i: d for i, d in zip(sorted(ids), ex.map(lambda i: fet_jugador(lw.s, i), sorted(ids))) if d}
+        resultado.append({**ob, "zonas": zs, "jugadores": jug})
+        print(f"Scouting {ob['titulo']} · {ob['zona']}: {len(nombres)} rivales, {len(zs)} zonas, {len(jug)}/{len(ids)} jugadores")
+    return resultado, snaps
 
 
 def fetch_proximos(lw):
@@ -289,13 +369,24 @@ def scrape_club():
     if not zones:
         raise RuntimeError("FETEMBA Equipos: no se encontraron zonas del club; se conservan los datos anteriores.")
 
-    prev = {}
     path = DATA / "eq_raw.json"
+    prev_raw = {}
     if path.exists():
         try:
-            prev = json.loads(path.read_text()).get("sets", {})
+            prev_raw = json.loads(path.read_text())
         except ValueError:
-            prev = {}
+            prev_raw = {}
+    prev = prev_raw.get("sets") or {}
+
+    # rivales de la zona actual (solo si el club lo pide con "scouting_liga"): si falla, se conserva lo anterior
+    rivales = []
+    if SCOUTING:
+        try:
+            rivales, rsnaps = scrape_rivales(lw, vs, zones, liga)
+            spin_snaps.update(rsnaps)
+        except Exception as e:  # noqa
+            print("Scouting de rivales no disponible, se conserva lo anterior:", e, file=sys.stderr)
+            rivales = prev_raw.get("rivales") or []
 
     def sets_of(item):
         eid, snap = item
@@ -322,8 +413,8 @@ def scrape_club():
                 pass
 
     path.write_text(json.dumps({"updated": datetime.now(timezone.utc).isoformat(), "zones": zones,
-                                "playoff": loose, "sets": sets, "upcoming": upcoming}, ensure_ascii=False))
-    print(f"FETEMBA Equipos: {len(zones)} zonas, {len(loose)} cruces de play off, {len(sets)} encuentros con sets, {len(upcoming)} próximos")
+                                "playoff": loose, "sets": sets, "upcoming": upcoming, "rivales": rivales}, ensure_ascii=False))
+    print(f"FETEMBA Equipos: {len(zones)} zonas, {len(loose)} cruces de play off, {len(sets)} encuentros con sets, {len(upcoming)} próximos, {len(rivales)} scouting")
     return proximos_ok   # False: las tablas y resultados se actualizaron, pero los próximos partidos no se pudieron leer (se conservaron los anteriores)
 
 

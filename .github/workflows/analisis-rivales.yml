@@ -72,3 +72,13 @@ jobs:
         run: |
           set -o pipefail
           python scripts/analisis_rivales.py ${CLUB:+--club "$CLUB"} | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Avisar por Telegram si falló
+        if: failure()
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ESTADO: failure
+          QUE: análisis de rivales
+        run: python scripts/avisar_corrida.py

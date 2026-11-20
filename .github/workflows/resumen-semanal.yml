@@ -48,3 +48,13 @@ jobs:
           CLUB: ${{ inputs.club }}
           DIAS: ${{ inputs.dias }}
         run: python scripts/resumen.py ${CLUB:+--club "$CLUB"} --dias "${DIAS:-7}"
+
+      - name: Avisar por Telegram si falló
+        if: failure()
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ESTADO: failure
+          QUE: resumen semanal de los clubes
+        run: python scripts/avisar_corrida.py

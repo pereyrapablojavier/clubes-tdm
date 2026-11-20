@@ -105,6 +105,17 @@ FETEMBA; **no se guarda la edad**) y manda: un resumen con la comparación de fu
 por rival con su fase anterior, jugadores (rating, singles y dobles), claves y últimos encuentros. Probar sin enviar:
 `python scripts/analisis_rivales.py --no-enviar`. La descarga completa de la Liga (Action "Actualizar liga-copa") también actualiza estos datos.
 
+## Resumen de cada Action por Telegram
+
+Al terminar, las Actions mandan un mensaje por Telegram (scripts/avisar_corrida.py), siempre que estén cargados `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID`:
+- **Actualizaciones y publicaciones** (calendarios, Liga/Copa, jugadores, modo mantenimiento y cada cambio en `main`): ✅ terminó bien / ⚠️ terminó con
+  avisos (se publicó con datos anteriores porque falló una descarga) / ❌ falló, con qué se actualizó, cuánto tardó, jugadores del club, fecha de cada
+  parte y el link a la corrida.
+- **Seguir jugadores**: el resumen de a quién se sigue. **Verificar cambios** (pull requests): ✅/❌ con el título del PR.
+- **Resumen semanal, Novedades del sitio y Análisis de rivales**: su mensaje es el resumen; si fallan, llega el aviso de falla.
+- Para no recibir los de las corridas que salen bien: Settings → Secrets and variables → Actions → pestaña *Variables* → `TELEGRAM_RESUMENES` = `no`
+  (las fallas se avisan siempre).
+
 ## Vista previa al compartir (WhatsApp, Telegram…)
 
 Cada club tiene `clubes/<slug>/og.png` (1200x630) y la portada `config/og.png`. Se generan con

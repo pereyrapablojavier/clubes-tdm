@@ -63,7 +63,7 @@ jobs:
         if: env.ACCION == 'agregar' || env.ACCION == 'quitar' || env.ACCION == 'lista'
         run: |
           set -o pipefail
-          python scripts/seguir.py --club "$CLUB" "$ACCION" "$IDS" | tee -a "$GITHUB_STEP_SUMMARY"
+          python scripts/seguir.py --club "$CLUB" "$ACCION" "$IDS" | tee -a "$GITHUB_STEP_SUMMARY" "$RUNNER_TEMP/seguir.txt"
 
       - name: Avisar a los nuevos y mandar su ficha
         if: env.ACCION == 'agregar'
@@ -91,3 +91,15 @@ jobs:
             git fetch -q origin datos && git rebase -q FETCH_HEAD || exit 1
           done
           exit 1
+
+      - name: Resumen por Telegram
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SILENCIAR: ${{ vars.TELEGRAM_RESUMENES }}
+          ESTADO: ${{ job.status }}
+        run: |
+          export QUE="seguimiento de jugadores: $ACCION ${IDS:+($IDS)} en $CLUB"
+          python scripts/avisar_corrida.py --archivo "$RUNNER_TEMP/seguir.txt"

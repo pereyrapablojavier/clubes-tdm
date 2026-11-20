@@ -73,3 +73,13 @@ jobs:
             git fetch -q origin datos && git rebase -q FETCH_HEAD || exit 1
           done
           exit 1
+
+      - name: Avisar por Telegram si falló
+        if: failure()
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ESTADO: failure
+          QUE: novedades del sitio
+        run: python scripts/avisar_corrida.py

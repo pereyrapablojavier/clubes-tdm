@@ -98,6 +98,7 @@ jobs:
       MANT: ${{ inputs.mantenimiento }}
       MENSAJE: ${{ inputs.mensaje }}
     steps:
+      - run: echo "INICIO=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
@@ -273,22 +274,32 @@ jobs:
 
       # Va al final, ya con el sitio publicado: marca la corrida como fallida (rojo + correo de GitHub) si alguna descarga no se pudo
       # hacer. El sitio quedó publicado con los últimos datos buenos.
-      - name: Avisar por Telegram si algo falló
-        # Si Telegram no está configurado, no hace nada. Va antes del paso que deja la corrida en rojo.
-        if: ${{ !cancelled() && (failure() || steps.nuevos_dl.outcome == 'failure' || steps.bajar.outcome == 'failure' || steps.equipos_dl.outcome == 'failure') }}
+      - name: Resumen por Telegram
+        # Avisa cómo terminó cada corrida (bien, con avisos o con falla). Sin Telegram configurado no hace nada.
+        # Para no recibir los de las corridas que salen bien: Settings → Secrets and variables → Actions → Variables → TELEGRAM_RESUMENES = no
+        # (las fallas se avisan siempre). Va antes del paso que deja la corrida en rojo.
+        if: ${{ !cancelled() }}
         continue-on-error: true
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SILENCIAR: ${{ vars.TELEGRAM_RESUMENES }}
+          JOB_STATUS: ${{ job.status }}
+          F_NUEVOS: ${{ steps.nuevos_dl.outcome }}
+          F_BAJAR: ${{ steps.bajar.outcome }}
+          F_EQUIPOS: ${{ steps.equipos_dl.outcome }}
         run: |
           fallas=""
-          [ "${{ steps.nuevos_dl.outcome }}" = failure ] && fallas="$fallas clubes nuevos;"
-          [ "${{ steps.bajar.outcome }}" = failure ] && fallas="$fallas TMT/FETEMBA;"
-          [ "${{ steps.equipos_dl.outcome }}" = failure ] && fallas="$fallas Liga y Copa;"
-          [ -z "$fallas" ] && fallas=" armado o publicación del sitio;"
-          python scripts/telegram.py "❌ <b>Falló una actualización</b> (${{ github.workflow }})
-          Qué:${fallas%;}
-          Detalle: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          [ "$F_NUEVOS" = failure ] && fallas="$fallas clubes nuevos;"
+          [ "$F_BAJAR" = failure ] && fallas="$fallas TMT/FETEMBA;"
+          [ "$F_EQUIPOS" = failure ] && fallas="$fallas Liga y Copa;"
+          if [ "$JOB_STATUS" = failure ]; then ESTADO=failure
+          elif [ -n "$fallas" ]; then ESTADO=partial
+          else ESTADO=success; fi
+          [ "$ESTADO" = failure ] && [ -z "$fallas" ] && fallas="armado o publicación del sitio;"
+          export ESTADO FALLAS="${fallas%;}"
+          if [ "$BAJAR" = true ]; then export QUE="${DESC:-clubes nuevos}${CLUB:+ · club $CLUB}"; else export QUE="armado y publicación del sitio (cambio de código)"; fi
+          python scripts/avisar_corrida.py --sitio
 
       - name: Avisar si alguna descarga falló
         if: ${{ !cancelled() && (steps.nuevos_dl.outcome == 'failure' || steps.bajar.outcome == 'failure' || steps.equipos_dl.outcome == 'failure') }}

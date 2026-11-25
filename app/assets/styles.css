@@ -319,3 +319,19 @@ details.circ .fecha span { font-size: 10px; letter-spacing: .5px; }
 .info { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; margin-left: 4px; border-radius: 50%; border: 1px solid var(--linea); background: var(--celeste-3); color: var(--azul); font: italic 700 10px/1 Georgia, serif; vertical-align: middle; cursor: help; text-transform: none; letter-spacing: 0; user-select: none; }
 .info:hover, .info:focus { background: var(--azul); color: #fff; outline: none; }
 .tipbox { position: fixed; z-index: 1000; display: none; max-width: min(300px, calc(100vw - 16px)); padding: 9px 11px; border-radius: 10px; background: #0E1B2A; color: #fff; font: 400 12.5px/1.4 "Inter", system-ui, sans-serif; box-shadow: 0 6px 20px rgba(0,0,0,.28); pointer-events: none; text-transform: none; letter-spacing: 0; }
+
+/* página Novedades */
+.nv-filtros { display: grid; gap: 10px; margin-top: 12px; }
+.nv-fechas { display: flex; gap: 12px; flex-wrap: wrap; }
+.nv-fechas input, .nv-fila select { font: 500 14px Inter, sans-serif; padding: 6px 8px; border: 1px solid var(--linea); border-radius: 8px; background: var(--card); color: var(--tinta); }
+.nv-fila { display: flex; gap: 8px; flex-wrap: wrap; }
+.nv-fila input[type=search] { flex: 1 1 180px; min-width: 0; }
+.nv-ev { display: flex; gap: 10px; align-items: baseline; padding: 8px 0; border-top: 1px solid var(--linea); }
+.nv-ev .nv-f { flex: none; width: 38px; }
+.nv-ev .nv-t { flex: 1; min-width: 0; }
+.nv-ev .nv-r { flex: none; font-weight: 700; }
+.nv-card .card-head { align-items: flex-start; }
+.nv-pts { text-align: right; font: 700 26px "Barlow Condensed", sans-serif; line-height: 1; }
+.nv-pts .small { display: block; font: 500 11px Inter, sans-serif; }
+.nv-res { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.nv-fila input[type=search] { font: 500 14px Inter, sans-serif; padding: 7px 10px; border: 1px solid var(--linea); border-radius: 8px; background: var(--card); color: var(--tinta); }

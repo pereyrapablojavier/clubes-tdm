@@ -839,6 +839,104 @@
     }).catch(() => {}));
   }
 
+  // ---------- Novedades: qué les pasó a los jugadores (torneos, puntos, Liga/Copa, Grand Slam/SS, podios, ranking FETEMBA)
+  const novState = { dias: 7, desde: "", hasta: "", grupos: new Set(), q: "", orden: "pts", agr: "jug" };
+  async function viewNovedades() {
+    $app.innerHTML = `<div class="loading">Cargando novedades…</div>`;
+    let N;
+    try { N = await getJSON("data/novedades.json"); } catch (e) { $app.innerHTML = `<div class="section"><h1>Novedades</h1><p class="muted">Todavía no hay datos.</p></div>`; return; }
+    const GRUPOS = { torneo: ["🏓", "Torneos TMT"], equipos: ["🏟️", "Liga y Copa"], circ: ["⭐", "Grand Slam y SS"], podio: ["🏅", "Podios del club"], rank: ["📊", "Ranking FETEMBA"] };
+    const grupoDe = (t) => (t === "liga" || t === "copa" ? "equipos" : t === "gs" || t === "ss" ? "circ" : t);
+    const addDias = (iso, n) => { const d = pd(iso); d.setDate(d.getDate() + n); return d.toLocaleDateString("sv-SE"); };
+    const hoy = hoyAR();
+    const evs = N.eventos.filter((e) => byId(e.id));
+    const ultima = evs.length ? evs.reduce((m, e) => (e.d > m ? e.d : m), "") : null;
+    const rango = () => (novState.dias ? [addDias(hoy, -novState.dias), hoy] : [novState.desde || addDias(hoy, -7), novState.hasta || hoy]);
+    const nombre = (id) => niceName(byId(id).name);
+    const sg = (a, b) => `${a}G–${b}P`;
+    const lineaEv = (e, conJugador) => {
+      const quien = conJugador ? `${plink(e.id, nombre(e.id))} · ` : "";
+      const f = `<span class="num muted small nv-f">${dm(e.d)}</span>`;
+      const fila = (txt, der = "") => `<div class="nv-ev">${f}<span class="nv-t">${quien}${txt}</span><span class="nv-r num">${der}</span></div>`;
+      if (e.t === "torneo") return fila(`🏓 ${esc(e.n)} <span class="small muted">· ${sg(e.w, e.l)}</span>`, `<span title="Rating TMT: ${fmt(e.pre)} → ${fmt(e.post)}">${signed(e.v)}</span>`);
+      if (e.t === "liga" || e.t === "copa") {
+        const aporte = [e.s[0] + e.s[1] ? `singles ${e.s[0]}-${e.s[1]}` : "", e.dd[0] + e.dd[1] ? `dobles ${e.dd[0]}-${e.dd[1]}` : ""].filter(Boolean).join(" · ") || "sin resultado cargado";
+        return fila(`🏟️ ${esc(e.n)} <span class="small muted">· ${esc(e.eq)} ${e.loc ? "vs" : "@"} ${esc(e.r)}</span><br><span class="nv-res"><span class="wl ${e.res === "G" ? "G" : "P"}">${e.res}</span> <b class="num">${e.gf}-${e.gc}</b> <span class="small muted">· su aporte: ${aporte}</span></span>`);
+      }
+      if (e.t === "gs" || e.t === "ss") return fila(`${e.t === "gs" ? "🌟 Grand Slam" : "⭐ Super Series"}: ${esc(e.n)} <span class="small muted">· ${esc(e.cat || "")} · ${sg(e.w, e.l)}${e.pu ? " · " + (e.ll === "A" ? "" : "consuelo, ") + e.pu + "° puesto" : ""}</span>`);
+      if (e.t === "podio") return fila(`🏅 ${medal(e.pos)} ${e.pos}° en ${esc(e.div)} · ${esc(e.n)}`);
+      if (e.t === "rank") return fila(`📊 Ranking FETEMBA: <b class="num">${fmt(e.pts)}</b> pts <span class="small muted">· puesto ${fmt(e.pos)}</span>`, signed(e.v));
+      return "";
+    };
+    const draw = () => {
+      const [d0, d1] = rango();
+      const q = novState.q.trim().toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
+      const lista = evs.filter((e) => e.d >= d0 && e.d <= d1 && (!novState.grupos.size || novState.grupos.has(grupoDe(e.t)))
+        && (!q || (nombre(e.id) + " " + byId(e.id).name).toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "").includes(q)));
+      const porJ = new Map();
+      lista.forEach((e) => { const a = porJ.get(e.id) || porJ.set(e.id, { id: e.id, ev: [], pts: 0, torneos: 0, g: 0, p: 0, act: 0 }).get(e.id); a.ev.push(e); a.act++;
+        if (e.t === "torneo") { a.pts += e.v || 0; a.torneos++; a.g += e.w; a.p += e.l; } });
+      const jug = [...porJ.values()];
+      const ord = { pts: (a, b) => b.pts - a.pts || b.act - a.act, nombre: (a, b) => nombre(a.id).localeCompare(nombre(b.id)), act: (a, b) => b.act - a.act || b.pts - a.pts }[novState.orden];
+      jug.sort(ord);
+      const tors = new Set(lista.filter((e) => e.t === "torneo").map((e) => e.x)).size;
+      const encs = new Set(lista.filter((e) => e.t === "liga" || e.t === "copa").map((e) => e.x)).size;
+      const circ = new Set(lista.filter((e) => e.t === "gs" || e.t === "ss").map((e) => e.x)).size;
+      const neto = jug.reduce((s, a) => s + a.pts, 0);
+      let cuerpo;
+      if (!lista.length) {
+        cuerpo = `<div class="card section"><h3>Sin novedades en este período</h3>
+          <p class="muted">No hay nada nuevo entre el ${fdate(d0)} y el ${fdate(d1)}${novState.grupos.size || q ? " con los filtros elegidos" : ""}.${ultima ? ` La última novedad registrada es del <b>${fdate(ultima)}</b>.` : ""}</p>
+          ${ultima ? `<p><button class="btn" id="nvUlt">Ver la última semana con novedades</button></p>` : ""}</div>`;
+      } else if (novState.agr === "fecha") {
+        const dias = [...new Set(lista.map((e) => e.d))].sort().reverse();
+        cuerpo = dias.map((d) => `<div class="card section nv-card"><h3>${esc(longDate(d))}</h3>${lista.filter((e) => e.d === d).sort((a, b) => nombre(a.id).localeCompare(nombre(b.id))).map((e) => lineaEv(e, true)).join("")}</div>`).join("");
+      } else {
+        cuerpo = jug.map((a) => { const j = byId(a.id); return `<div class="card section nv-card"><div class="card-head"><div>
+            <h3 style="margin:0">${plink(a.id, nombre(a.id))} ${catBadge(j.cat)}</h3>
+            <div class="small muted">${[a.torneos ? `${a.torneos} torneo${a.torneos === 1 ? "" : "s"} · ${sg(a.g, a.p)}` : "", a.ev.filter((e) => e.t === "liga" || e.t === "copa").length ? "Liga/Copa" : "", a.ev.some((e) => e.t === "gs" || e.t === "ss") ? "Grand Slam/SS" : "", a.ev.some((e) => e.t === "podio") ? "podio" : ""].filter(Boolean).join(" · ") || "&nbsp;"}</div></div>
+            ${a.torneos ? `<div class="nv-pts">${signed(a.pts)}<span class="small muted">pts TMT</span></div>` : ""}</div>
+            ${a.ev.map((e) => lineaEv(e, false)).join("")}</div>`; }).join("");
+      }
+      document.getElementById("nvBody").innerHTML = `
+        <div class="grid tiles section">
+          ${tile(jug.length, "Jugadores con novedades")}
+          ${tile(tors, "Torneos TMT", "con jugadores del club")}
+          ${tile(signed(neto), `Puntos TMT ${info("Suma de los puntos de rating TMT que ganaron (+) o perdieron (−) los jugadores en los torneos de este período. " + PTS)}`, "ganados − perdidos")}
+          ${tile(encs, "Encuentros Liga/Copa")}
+          ${tile(circ, "Grand Slam / SS")}
+        </div>${cuerpo}`;
+      const u = document.getElementById("nvUlt");
+      u && u.addEventListener("click", () => { novState.dias = 0; novState.hasta = ultima; novState.desde = addDias(ultima, -6); sync(); draw(); });
+    };
+    const sync = () => {
+      document.querySelectorAll("#nvRango .chip").forEach((c) => c.classList.toggle("on", +c.dataset.d === novState.dias));
+      const [d0, d1] = rango(); document.getElementById("nvD").value = d0; document.getElementById("nvH").value = d1;
+      document.querySelectorAll("#nvTipos .chip").forEach((c) => c.classList.toggle("on", c.dataset.g === "" ? !novState.grupos.size : novState.grupos.has(c.dataset.g)));
+    };
+    $app.innerHTML = `<div class="section"><h1>Novedades de los jugadores</h1>
+      <p class="muted" style="max-width:720px">Cómo les fue a los jugadores de ${esc(K().corto)}: torneos jugados y puntos de rating ganados o perdidos, Liga y Copa de Clubes, Grand Slam y Super Series, podios en los torneos del club y cambios en el ranking de FETEMBA.</p>
+      <div class="nv-filtros">
+        <div class="chips" id="nvRango"><button class="chip" data-d="7">Última semana</button><button class="chip" data-d="15">15 días</button><button class="chip" data-d="30">30 días</button><button class="chip" data-d="90">90 días</button><button class="chip" data-d="0">Fechas</button></div>
+        <div class="nv-fechas"><label class="small muted">Desde <input type="date" id="nvD"></label><label class="small muted">Hasta <input type="date" id="nvH"></label></div>
+        <div class="chips" id="nvTipos"><button class="chip" data-g="">Todo</button>${Object.entries(GRUPOS).map(([k, [ic, l]]) => `<button class="chip" data-g="${k}">${ic} ${l}</button>`).join("")}</div>
+        <div class="nv-fila"><input id="nvQ" type="search" placeholder="Buscar jugador…" autocomplete="off" value="${esc(novState.q)}">
+          <select id="nvAgr" aria-label="Agrupar"><option value="jug">Agrupar por jugador</option><option value="fecha">Agrupar por fecha</option></select>
+          <select id="nvOrd" aria-label="Ordenar"><option value="pts">Más puntos TMT primero</option><option value="nombre">Por nombre</option><option value="act">Más actividad primero</option></select></div>
+      </div><div id="nvBody"></div>
+      <p class="small muted" style="margin-top:16px">Hay novedades desde el ${fdate(N.desde)}. Se actualizan con cada descarga de datos (TMT, FETEMBA y FETEMBA Equipos); lo último que se ve puede tardar uno o dos días en publicarse.</p></div>`;
+    document.getElementById("nvAgr").value = novState.agr; document.getElementById("nvOrd").value = novState.orden;
+    document.getElementById("nvRango").addEventListener("click", (e) => { const b = e.target.closest(".chip"); if (!b) return;
+      novState.dias = +b.dataset.d; if (!novState.dias) { const [a, z] = rango(); novState.desde = novState.desde || a; novState.hasta = novState.hasta || z; } sync(); draw(); });
+    ["nvD", "nvH"].forEach((id) => document.getElementById(id).addEventListener("change", (e) => { novState.dias = 0; novState[id === "nvD" ? "desde" : "hasta"] = e.target.value; sync(); draw(); }));
+    document.getElementById("nvTipos").addEventListener("click", (e) => { const b = e.target.closest(".chip"); if (!b) return;
+      if (!b.dataset.g) novState.grupos.clear(); else novState.grupos.has(b.dataset.g) ? novState.grupos.delete(b.dataset.g) : novState.grupos.add(b.dataset.g); sync(); draw(); });
+    document.getElementById("nvQ").addEventListener("input", (e) => { novState.q = e.target.value; draw(); });
+    document.getElementById("nvAgr").addEventListener("change", (e) => { novState.agr = e.target.value; draw(); });
+    document.getElementById("nvOrd").addEventListener("change", (e) => { novState.orden = e.target.value; draw(); });
+    sync(); draw();
+  }
+
   function viewApp() {
     const url = location.href.split("#")[0];
     const step = (n, t) => `<li><span class="stepn">${n}</span><span>${t}</span></li>`;
@@ -972,6 +1070,7 @@
     if (r === "jugadores") viewJugadores();
     else if (r === "jugador") await viewJugador(decodeURIComponent(parts[1] || ""));
     else if (r === "torneos") viewTorneos();
+    else if (r === "novedades") await viewNovedades();
     else if (r === "comparar") await viewComparar(new URLSearchParams(qs || ""));
     else if (r === "club") viewClub();
     else if (r === "app") viewApp();
@@ -982,7 +1081,7 @@
     else if (r === "favoritos" || r === "perfil") { await viewPerfil(); return; }
     else if (r === "legal") viewLegal();
     else viewInicio();
-    const name = { jugadores: "Jugadores", torneos: "Torneos", comparar: "Comparar", club: "Dónde estamos", app: "Instalar app", calendario: "Calendario", liga: "Liga de Equipos", copa: "Copa de Clubes", circuito: "Grand Slam y Super Series", legal: "Aviso legal" }[r];
+    const name = { jugadores: "Jugadores", torneos: "Torneos", novedades: "Novedades", comparar: "Comparar", club: "Dónde estamos", app: "Instalar app", calendario: "Calendario", liga: "Liga de Equipos", copa: "Copa de Clubes", circuito: "Grand Slam y Super Series", legal: "Aviso legal" }[r];
     document.title = r === "jugador" ? `${niceName(byId(decodeURIComponent(parts[1] || ""))?.name || "Jugador")} · ${K().corto}` : name ? `${name} · ${K().nombre}` : `${K().nombre} · Jugadores y estadísticas`;
   }
 

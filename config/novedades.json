@@ -1,9 +1,58 @@
 [
-  {"id": 7, "fecha": "2026-11-14", "icono": "🧮", "titulo": "Total de jugadores explicado", "detalle": "En el inicio, la \"i\" de la tarjeta Jugadores muestra cómo se calcula el total (TMT + FETEMBA, sin contar dos veces a quienes están en las dos)."},
-  {"id": 6, "fecha": "2026-11-14", "icono": "📷", "titulo": "QR para instalar la app", "detalle": "En la sección \"SPIN en tu celular\" hay un código QR para escanear y abrir el sitio desde otro celular."},
-  {"id": 5, "fecha": "2026-11-14", "icono": "ℹ️", "titulo": "Explicación de los números +/−", "detalle": "Una \"i\" aclara qué significa cada +/−: variación de rating, batacazos, mejores victorias y puntos de cada torneo y partido."},
-  {"id": 4, "fecha": "2026-11-13", "icono": "🏷️", "titulo": "Ficha del jugador más clara", "detalle": "Ahora muestra el código TMT y el ID de FETEMBA, y la categoría en dos burbujas separadas: \"6ta TMT\" y \"8va FETEMBA\"."},
-  {"id": 3, "fecha": "2026-11-13", "icono": "🔗", "titulo": "Vista previa al compartir", "detalle": "Al mandar el link por WhatsApp o Telegram se ve una imagen con el escudo y el nombre del club."},
-  {"id": 2, "fecha": "2026-11-13", "icono": "🕒", "titulo": "Fecha de cada actualización", "detalle": "El pie del sitio muestra cuándo se actualizó cada parte: jugadores, calendario, próximos partidos, Liga/Copa y Grand Slam."},
-  {"id": 1, "fecha": "2026-11-13", "icono": "🏆", "titulo": "Próximos torneos de Grand Slam y Super Series", "detalle": "En la sección Grand Slam / Super Series se ven las fechas, la sede y el estado de la inscripción de los próximos torneos de FETEMBA."}
+ {
+  "id": 8,
+  "fecha": "2026-11-25",
+  "icono": "📰",
+  "titulo": "Nueva página Novedades (Mi Club)",
+  "detalle": "Cómo les fue a los jugadores en la última semana: torneos y puntos de rating ganados o perdidos, Liga y Copa, Grand Slam y Super Series, podios y ranking de FETEMBA. Se puede filtrar por fechas, tipo y jugador."
+ },
+ {
+  "id": 7,
+  "fecha": "2026-11-14",
+  "icono": "🧮",
+  "titulo": "Total de jugadores explicado",
+  "detalle": "En el inicio, la \"i\" de la tarjeta Jugadores muestra cómo se calcula el total (TMT + FETEMBA, sin contar dos veces a quienes están en las dos)."
+ },
+ {
+  "id": 6,
+  "fecha": "2026-11-14",
+  "icono": "📷",
+  "titulo": "QR para instalar la app",
+  "detalle": "En la sección \"SPIN en tu celular\" hay un código QR para escanear y abrir el sitio desde otro celular."
+ },
+ {
+  "id": 5,
+  "fecha": "2026-11-14",
+  "icono": "ℹ️",
+  "titulo": "Explicación de los números +/−",
+  "detalle": "Una \"i\" aclara qué significa cada +/−: variación de rating, batacazos, mejores victorias y puntos de cada torneo y partido."
+ },
+ {
+  "id": 4,
+  "fecha": "2026-11-13",
+  "icono": "🏷️",
+  "titulo": "Ficha del jugador más clara",
+  "detalle": "Ahora muestra el código TMT y el ID de FETEMBA, y la categoría en dos burbujas separadas: \"6ta TMT\" y \"8va FETEMBA\"."
+ },
+ {
+  "id": 3,
+  "fecha": "2026-11-13",
+  "icono": "🔗",
+  "titulo": "Vista previa al compartir",
+  "detalle": "Al mandar el link por WhatsApp o Telegram se ve una imagen con el escudo y el nombre del club."
+ },
+ {
+  "id": 2,
+  "fecha": "2026-11-13",
+  "icono": "🕒",
+  "titulo": "Fecha de cada actualización",
+  "detalle": "El pie del sitio muestra cuándo se actualizó cada parte: jugadores, calendario, próximos partidos, Liga/Copa y Grand Slam."
+ },
+ {
+  "id": 1,
+  "fecha": "2026-11-13",
+  "icono": "🏆",
+  "titulo": "Próximos torneos de Grand Slam y Super Series",
+  "detalle": "En la sección Grand Slam / Super Series se ven las fechas, la sede y el estado de la inscripción de los próximos torneos de FETEMBA."
+ }
 ]

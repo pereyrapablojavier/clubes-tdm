@@ -155,6 +155,24 @@
     el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img">${axes(ticks, y, labels.map(String), x)}${bars}</svg>${legend}`;
   }
 
+  // barras agrupadas (una por serie y categoría, lado a lado) con el valor arriba de cada barra
+  function barChartGrupo(el, labels, series) {
+    if (!el || !labels.length) return;
+    const ticks = niceTicks(0, Math.max(...series.flatMap((s) => s.data), 1), 4);
+    const y1 = ticks[ticks.length - 1];
+    const bw = (W - PL - PR) / labels.length, gw = bw * 0.78 / series.length;
+    const x = (i) => PL + bw * (i + 0.5);
+    const y = (v) => PT + (1 - v / y1) * (H - PT - PB);
+    let bars = "";
+    labels.forEach((l, i) => series.forEach((s, k) => {
+      const v = s.data[i] || 0, bx = x(i) - (gw * series.length) / 2 + gw * k;
+      bars += `<rect x="${bx + 1}" y="${y(v)}" width="${gw - 2}" height="${Math.max(0, y(0) - y(v))}" rx="3" fill="${s.color}"><title>${esc(l)} · ${esc(s.label)}: ${v}</title></rect>`
+        + `<text x="${bx + gw / 2}" y="${y(v) - 4}" text-anchor="middle" font-size="${series.length > 1 ? 10.5 : 12}" font-weight="700" fill="${css("--tinta")}">${v}</text>`;
+    }));
+    const legend = `<div class="legend">${series.map((s) => `<span><i style="background:${s.color}"></i>${esc(s.label)}</span>`).join("")}</div>`;
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img">${axes(ticks, y, labels.map(String), x)}${bars}</svg>${legend}`;
+  }
+
   // ---------- views
   function viewInicio() {
     const s = CLUB.stats;
@@ -188,8 +206,10 @@
         </tbody></table></div>
       </div>
       <div class="card">
-        <h3>Plantel por categoría (TMT)</h3>
+        <div class="card-head"><h3>Plantel por categoría (TMT)${CLUB.categorias_hist ? " " + info("Compara el plantel de hoy con el de hace 1, 3, 6 o 12 meses. La categoría de cada fecha se reconstruye con el rating TMT que tenía cada jugador actual (escala: " + CLUB.categorias_hist.escala.map(([m, c]) => c + " desde " + m).join(", ") + "; 8va por debajo de 980). No incluye a los que ya se fueron del club: desde ahora se guarda una foto semanal del plantel para poder mostrarlos.") : ""}</h3>
+          ${CLUB.categorias_hist ? `<div class="tabs" id="catTabs">${[[0, "Hoy"], [1, "1 mes"], [3, "3 meses"], [6, "6 meses"], [12, "1 año"]].map(([k, l]) => `<button data-k="${k}" class="${k === 0 ? "on" : ""}">${l}</button>`).join("")}</div>` : ""}</div>
         <div id="chCats"></div>
+        <div id="catCambios"></div>
         <p class="small muted">Rating total del club: <b>${fmt(s.tmt_rating_total)}</b> · ${fmt(s.tot.partidos)} partidos y ${fmt(s.tot.p1)} títulos en la historia del circuito.</p>
       </div>
     </div>
@@ -212,7 +232,36 @@
     </div>`;
     const cnt = CATS.map((c) => s.cats[c] || 0);
     barChart(document.getElementById("chCats"), CATS, [{ data: cnt, color: css("--celeste"), label: "Jugadores" }]);
+    const HC = CLUB.categorias_hist;
+    if (HC) {
+      const dibujar = (n) => {
+        const box = document.getElementById("catCambios");
+        document.querySelectorAll("#catTabs button").forEach((b) => b.classList.toggle("on", +b.dataset.k === n));
+        if (!n) { barChart(document.getElementById("chCats"), CATS, [{ data: cnt, color: css("--celeste"), label: "Jugadores" }]); box.innerHTML = evolucionHTML(HC); return; }
+        const c = HC.comparar[n], antes = CATS.map((k) => c.n[k] || 0), hoyT = cnt.reduce((a, b) => a + b, 0);
+        barChartGrupo(document.getElementById("chCats"), CATS, [{ data: antes, color: "#9AA7B4", label: `Hace ${n === 12 ? "1 año" : n + (n === 1 ? " mes" : " meses")} (${fdate(c.fecha)})` }, { data: cnt, color: css("--celeste"), label: "Hoy" }]);
+        const lista = (titulo, items, fila, vacio) => `<div class="cat-lista"><h4>${titulo} <span class="muted">(${items.length})</span></h4>${items.length
+          ? `<ul class="list">${items.slice(0, 8).map(fila).join("")}</ul>${items.length > 8 ? `<details><summary class="small linkish">Ver ${items.length - 8} más</summary><ul class="list">${items.slice(8).map(fila).join("")}</ul></details>` : ""}`
+          : `<p class="small muted">${vacio}</p>`}</div>`;
+        const mov = (x) => `<li><span class="grow ellipsis">${byId(x.id) ? plink(x.id, niceName(byId(x.id).name)) : esc(x.id)}</span><span class="small num">${catBadge(x.de)} → ${catBadge(x.a)} <span class="muted">${signed(x.r1 - x.r0)}</span></span></li>`;
+        const nue = (x) => `<li><span class="grow ellipsis">${byId(x.id) ? plink(x.id, niceName(byId(x.id).name)) : esc(x.id)}</span><span class="small">${catBadge(x.a)} <span class="muted">${fmt(x.r1)}</span></span></li>`;
+        box.innerHTML = `<p class="small" style="margin:10px 0 4px"><b>${hoyT}</b> jugadores hoy · <b>${c.total}</b> con rating hace ${n === 12 ? "1 año" : n + (n === 1 ? " mes" : " meses")} (<b>${signed(hoyT - c.total)}</b>).</p>
+          <div class="cat-listas">
+            ${lista("⬆️ Subieron de categoría", c.sube, mov, "Nadie subió de categoría en este período.")}
+            ${lista("⬇️ Bajaron de categoría", c.baja, mov, "Nadie bajó de categoría en este período.")}
+            ${lista("🆕 Nuevos con rating", c.nuevos, nue, "No hay jugadores nuevos con rating en este período.")}
+            ${c.foto ? lista("👋 Ya no están en el club", c.salieron, (x) => `<li><span class="grow ellipsis">${esc(niceName(x.name))}</span><span class="small">${catBadge(x.de)}</span></li>`, "Nadie se fue del club en este período.") : ""}
+          </div>
+          <p class="small muted">«Nuevos con rating»: todavía no tenían rating TMT en esa fecha (debutaron en el circuito después). ${c.foto ? "" : "Todavía no hay una foto del plantel de esa época, por eso no se puede decir quiénes se fueron del club."}</p>${evolucionHTML(HC)}`;
+      };
+      document.getElementById("catTabs").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) dibujar(+b.dataset.k); });
+      dibujar(0);
+    }
   }
+  // tabla "evolución mes a mes": jugadores por categoría a fin de cada mes
+  const evolucionHTML = (H) => `<details style="margin-top:10px"><summary class="small linkish">Ver evolución mes a mes</summary><div class="tbl-wrap"><table class="small"><thead><tr><th>Mes</th>${CATS.map((c) => `<th class="r">${c}</th>`).join("")}<th class="r">Total</th></tr></thead><tbody>
+    ${H.meses.slice().reverse().map((m) => `<tr><td>${m.mes === "hoy" ? "<b>Hoy</b>" : esc(m.mes.slice(5) + "/" + m.mes.slice(0, 4))}</td>${CATS.map((c) => `<td class="r num">${m.n[c] || 0}</td>`).join("")}<td class="r num"><b>${m.total}</b></td></tr>`).join("")}
+    </tbody></table></div><p class="small muted">Cantidad de jugadores (los de hoy) en cada categoría a fin de mes, según su rating de entonces. Los meses anteriores no incluyen a quienes ya se fueron del club.</p></details>`;
 
   const tourItem = (t) => `<li><span class="grow"><div class="ellipsis"><a href="${TMT}/partidos_xtorneo.asp?codigo=${esc(t.tid)}" target="_blank" rel="noopener">${esc(t.name)}</a></div>
       <div class="small muted">${fdate(t.date)} · ${t.players.length} jugador${t.players.length === 1 ? "" : "es"} · ${t.w}G–${t.l}P</div></span>

@@ -124,6 +124,14 @@ los torneos del club y cambios en el ranking de FETEMBA. Se filtra por rango de 
 nada en el período, lo dice y ofrece saltar a la última semana con novedades. Los datos salen de las mismas descargas de siempre:
 `build.py` arma `data/novedades.json` (últimos 400 días; `NOVEDADES_DIAS`) y no hace falta ninguna Action nueva.
 
+## Plantel por categoría: comparación con meses anteriores
+
+La tarjeta "Plantel por categoría (TMT)" del inicio tiene botones Hoy / 1 mes / 3 meses / 6 meses / 1 año. `build.py` (`category_history`) reconstruye la categoría
+de cada jugador actual en cada fecha con el rating que tenía (después de cada torneo) y la escala TMT (`ESCALA_CAT`: 1ra ≥2100, 2da ≥1800, 3ra ≥1600, 4ta ≥1400,
+5ta ≥1200, 6ta ≥1080, 7ma ≥980; el resto 8va), y compara con hoy: quién subió, bajó o es nuevo con rating, más una tabla mes a mes. Los meses anteriores no incluyen a quienes ya
+se fueron del club; para poder mostrarlos, cada actualización guarda una foto semanal del plantel en la rama `datos` (`<club>/historial_categorias.json`) y, cuando hay una
+foto de esa época, aparece "Ya no están en el club".
+
 ## Vista previa al compartir (WhatsApp, Telegram…)
 
 Cada club tiene `clubes/<slug>/og.png` (1200x630) y la portada `config/og.png`. Se generan con

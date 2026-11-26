@@ -335,3 +335,10 @@ details.circ .fecha span { font-size: 10px; letter-spacing: .5px; }
 .nv-pts .small { display: block; font: 500 11px Inter, sans-serif; }
 .nv-res { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
 .nv-fila input[type=search] { font: 500 14px Inter, sans-serif; padding: 7px 10px; border: 1px solid var(--linea); border-radius: 8px; background: var(--card); color: var(--tinta); }
+
+/* plantel por categoría: comparación con meses anteriores */
+.cat-listas { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-top: 8px; }
+.cat-lista h4 { margin: 0 0 4px; font-size: 14px; }
+.cat-lista .list li { padding: 6px 0; }
+#catTabs { max-width: 100%; }
+@media (max-width: 520px) { #catTabs button { padding: 6px 7px; font-size: 12px; } .card-head:has(#catTabs) { flex-wrap: wrap; gap: 8px; } }

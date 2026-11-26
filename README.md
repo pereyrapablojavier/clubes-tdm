@@ -116,7 +116,7 @@ Al terminar, las Actions mandan un mensaje por Telegram (scripts/avisar_corrida.
 - Para no recibir los de las corridas que salen bien: Settings → Secrets and variables → Actions → pestaña *Variables* → `TELEGRAM_RESUMENES` = `no`
   (las fallas se avisan siempre).
 
-## Página Novedades (Mi Club → Novedades)
+## Página Novedades de la última semana (Mi Club)
 
 Muestra cómo les fue a los jugadores del club en un período (por defecto, la última semana): torneos TMT con los puntos de rating ganados o
 perdidos, Liga y Copa de Clubes (resultado del encuentro y aporte de cada jugador en singles y dobles), Grand Slam y Super Series, podios en

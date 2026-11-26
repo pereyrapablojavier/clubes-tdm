@@ -870,6 +870,7 @@
     };
     const draw = () => {
       const [d0, d1] = rango();
+      document.getElementById("nvTitulo").textContent = tituloPeriodo();
       const q = novState.q.trim().toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
       const lista = evs.filter((e) => e.d >= d0 && e.d <= d1 && (!novState.grupos.size || novState.grupos.has(grupoDe(e.t)))
         && (!q || (nombre(e.id) + " " + byId(e.id).name).toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "").includes(q)));
@@ -914,7 +915,8 @@
       const [d0, d1] = rango(); document.getElementById("nvD").value = d0; document.getElementById("nvH").value = d1;
       document.querySelectorAll("#nvTipos .chip").forEach((c) => c.classList.toggle("on", c.dataset.g === "" ? !novState.grupos.size : novState.grupos.has(c.dataset.g)));
     };
-    $app.innerHTML = `<div class="section"><h1>Novedades de los jugadores</h1>
+    const tituloPeriodo = () => (novState.dias === 7 ? "Novedades de la última semana" : novState.dias ? `Novedades de los últimos ${novState.dias} días` : `Novedades del ${fdate(rango()[0]).slice(0, 5)} al ${fdate(rango()[1]).slice(0, 5)}`);
+    $app.innerHTML = `<div class="section"><h1 id="nvTitulo">Novedades de la última semana</h1>
       <p class="muted" style="max-width:720px">Cómo les fue a los jugadores de ${esc(K().corto)}: torneos jugados y puntos de rating ganados o perdidos, Liga y Copa de Clubes, Grand Slam y Super Series, podios en los torneos del club y cambios en el ranking de FETEMBA.</p>
       <div class="nv-filtros">
         <div class="chips" id="nvRango"><button class="chip" data-d="7">Última semana</button><button class="chip" data-d="15">15 días</button><button class="chip" data-d="30">30 días</button><button class="chip" data-d="90">90 días</button><button class="chip" data-d="0">Fechas</button></div>
@@ -1081,7 +1083,7 @@
     else if (r === "favoritos" || r === "perfil") { await viewPerfil(); return; }
     else if (r === "legal") viewLegal();
     else viewInicio();
-    const name = { jugadores: "Jugadores", torneos: "Torneos", novedades: "Novedades", comparar: "Comparar", club: "Dónde estamos", app: "Instalar app", calendario: "Calendario", liga: "Liga de Equipos", copa: "Copa de Clubes", circuito: "Grand Slam y Super Series", legal: "Aviso legal" }[r];
+    const name = { jugadores: "Jugadores", torneos: "Torneos", novedades: "Novedades de la última semana", comparar: "Comparar", club: "Dónde estamos", app: "Instalar app", calendario: "Calendario", liga: "Liga de Equipos", copa: "Copa de Clubes", circuito: "Grand Slam y Super Series", legal: "Aviso legal" }[r];
     document.title = r === "jugador" ? `${niceName(byId(decodeURIComponent(parts[1] || ""))?.name || "Jugador")} · ${K().corto}` : name ? `${name} · ${K().nombre}` : `${K().nombre} · Jugadores y estadísticas`;
   }
 

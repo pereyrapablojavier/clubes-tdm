@@ -43,6 +43,9 @@ def read_json(path, default=None):
     return json.loads(path.read_text()) if path.exists() else default
 
 CAT_ORDER = ["1ra", "2da", "3ra", "4ta", "5ta", "6ta", "7ma", "8va"]
+# Escala de categorías TMT por rating (mínimo para cada una); por debajo de 980 es 8va
+ESCALA_CAT = [(2100, "1ra"), (1800, "2da"), (1600, "3ra"), (1400, "4ta"), (1200, "5ta"), (1080, "6ta"), (980, "7ma")]
+COMPARAR_MESES = (1, 3, 6, 12)
 
 
 def norm(s):
@@ -256,6 +259,7 @@ def build():
         },
         "tournaments": recent_t, "upsets": ups[:12], "derbies": derby_list,
         "players": summary,
+        "categorias_hist": category_history(players),
     }
 
     # entrenadores enlazados a un jugador que ya no está en el sitio: se muestran sin link (y se avisa)
@@ -848,6 +852,131 @@ def build_novedades(players, calendar, equipos, circuito):
                         ev.append({"t": "podio", "d": t["date"], "id": q["c"], "x": t["code"], "n": t["name"], "div": d["div"], "pos": q["pos"]})
     ev.sort(key=lambda x: (x["d"], x["t"]), reverse=True)
     return {"updated": datetime.now(timezone.utc).isoformat(timespec="seconds"), "desde": desde, "eventos": ev}
+
+
+def cat_por_rating(r):
+    for minimo, c in ESCALA_CAT:
+        if r >= minimo:
+            return c
+    return "8va"
+
+
+def meses_atras(hoy, n):
+    """La misma fecha de hace n meses (si el día no existe, el último del mes: 31/05 - 3 meses = 28/02)."""
+    m = hoy.year * 12 + hoy.month - 1 - n
+    y, mm = divmod(m, 12)
+    mm += 1
+    dia = hoy.day
+    while True:
+        try:
+            return date(y, mm, dia)
+        except ValueError:
+            dia -= 1
+
+
+def fin_de_mes(y, m):
+    return (date(y + (m == 12), m % 12 + 1, 1) - timedelta(days=1))
+
+
+def rating_al(tours_ord, d):
+    """Rating de un jugador al final del día d (el del último torneo hasta esa fecha); None si todavía no había jugado."""
+    r = None
+    for f, post in tours_ord:
+        if f > d:
+            break
+        r = post
+    return r
+
+
+def historial_snapshots(slug_dir=None):
+    path = clubcfg.data_root() / CFG["slug"] / "historial_categorias.json"
+    return read_json(path, {"snapshots": []}), path
+
+
+def category_history(players, hoy=None):
+    """División de cada jugador del club, reconstruida con su rating, a fin de cada mes y hace 1/3/6/12 meses.
+    Se calcula con los torneos de cada jugador (rating después de cada torneo), y se compara con hoy: quién subió, bajó o es nuevo.
+    Además guarda una foto del plantel por semana (historial_categorias.json en los datos): con ella se sabe también quién salió del club."""
+    hoy = hoy or date.today()
+    jug = {}
+    for p in players.values():
+        t = p.get("tmt")
+        if not t or t.get("rating") is None:
+            continue
+        tours = sorted(((date.fromisoformat(x["date"]), x["post"]) for x in t.get("tours") or [] if x.get("post") is not None),
+                       key=lambda z: z[0])
+        jug[p["id"]] = {"cat": t.get("cat") or cat_por_rating(t["rating"]), "rating": t["rating"], "tours": tours}
+    if not jug:
+        return None
+
+    def foto(d):
+        """{id: (categoría, rating)} al día d (solo los que ya tenían rating)."""
+        out = {}
+        for i, j in jug.items():
+            if d >= hoy:
+                out[i] = (j["cat"], j["rating"])
+            else:
+                r = rating_al(j["tours"], d)
+                if r is not None:
+                    out[i] = (cat_por_rating(r), r)
+        return out
+
+    def conteo(f):
+        return {c: sum(1 for v in f.values() if v[0] == c) for c in CAT_ORDER}
+
+    ahora = foto(hoy)
+    # evolución: fin de cada uno de los últimos 12 meses (sin el actual) + hoy
+    meses = []
+    y, m = hoy.year, hoy.month
+    ult = []
+    for _ in range(12):
+        m -= 1
+        if m == 0:
+            y, m = y - 1, 12
+        ult.append((y, m))
+    for y, m in reversed(ult):
+        fin = fin_de_mes(y, m)
+        f = foto(fin)
+        meses.append({"mes": f"{y}-{m:02d}", "fin": fin.isoformat(), "n": conteo(f), "total": len(f)})
+    meses.append({"mes": "hoy", "fin": hoy.isoformat(), "n": conteo(ahora), "total": len(ahora)})
+
+    rank = {c: i for i, c in enumerate(CAT_ORDER)}   # 0 = 1ra (la más alta)
+    snaps, snap_path = historial_snapshots()
+    comparar = {}
+    for n in COMPARAR_MESES:
+        d = meses_atras(hoy, n)
+        antes = foto(d)
+        sube, baja, nuevos = [], [], []
+        for i, (c1, r1) in ahora.items():
+            if i not in antes:
+                nuevos.append({"id": i, "a": c1, "r1": r1})
+                continue
+            c0, r0 = antes[i]
+            if rank[c1] < rank[c0]:
+                sube.append({"id": i, "de": c0, "a": c1, "r0": r0, "r1": r1})
+            elif rank[c1] > rank[c0]:
+                baja.append({"id": i, "de": c0, "a": c1, "r0": r0, "r1": r1})
+        key = lambda x: (rank[x["a"]], -(x.get("r1") or 0))  # noqa: E731
+        # salieron del club: estaban en una foto del plantel de esa época y ya no están (solo si hay foto)
+        previas = [s for s in snaps["snapshots"] if s["f"] <= (d + timedelta(days=10)).isoformat()]
+        salieron = []
+        if previas:
+            ref = max(previas, key=lambda s: s["f"])
+            salieron = [{"id": i, "name": v[0], "de": v[1]} for i, v in ref["j"].items() if i not in players]
+        comparar[str(n)] = {"fecha": d.isoformat(), "n": conteo(antes), "total": len(antes), "sube": sorted(sube, key=key),
+                            "baja": sorted(baja, key=key), "nuevos": sorted(nuevos, key=key), "salieron": salieron,
+                            "foto": bool(previas)}
+    # foto del plantel de esta corrida (una por semana)
+    try:
+        sem = hoy.isocalendar()[:2]
+        snaps["snapshots"] = [s for s in snaps["snapshots"] if date.fromisoformat(s["f"]).isocalendar()[:2] != sem]
+        snaps["snapshots"].append({"f": hoy.isoformat(), "j": {i: [players[i]["name"], v[0]] for i, v in ahora.items()}})
+        snaps["snapshots"] = sorted(snaps["snapshots"], key=lambda s: s["f"])[-110:]
+        snap_path.parent.mkdir(parents=True, exist_ok=True)
+        snap_path.write_text(json.dumps(snaps, ensure_ascii=False, separators=(",", ":")))
+    except OSError as e:
+        print("AVISO: no se pudo guardar la foto del plantel:", e)
+    return {"escala": [[m, c] for m, c in ESCALA_CAT], "meses": meses, "comparar": comparar}
 
 
 def _count(it):

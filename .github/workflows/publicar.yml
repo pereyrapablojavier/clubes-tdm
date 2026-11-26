@@ -212,6 +212,23 @@ jobs:
       - name: Armar el sitio
         run: python scripts/build.py | tee -a "$GITHUB_STEP_SUMMARY"
 
+      # El armado deja una foto semanal del plantel por categoría (<club>/historial_categorias.json): se guarda en la rama datos.
+      - name: Guardar la foto del plantel (rama datos)
+        if: env.BAJAR == 'true'
+        continue-on-error: true
+        run: |
+          cd "$CLUBES_DATA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then echo "Foto del plantel sin cambios"; exit 0; fi
+          git commit -q -m "Foto del plantel por categoría ($(date -u +%Y-%m-%d))"
+          for i in 1 2 3; do
+            git push -q origin HEAD:datos && exit 0
+            git fetch -q origin datos && git rebase -q FETCH_HEAD || exit 1
+          done
+          exit 1
+
       - name: Avisos de jugadores seguidos (Telegram)
         # Avisa por Telegram lo nuevo de los jugadores de "seguir" (club.json) y guarda lo avisado en la rama datos.
         # Sin Telegram configurado no hace nada. Si falla no impide publicar.

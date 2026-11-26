@@ -18,7 +18,7 @@ const srv = http.createServer((q, r) => {
   if (!clubes.length) fallas.push('no hay ningún club armado en ' + raiz);
   const b = await chromium.launch(), base = `http://localhost:${puerto}`;
   for (const c of clubes) {
-    for (const ruta of ['', 'jugadores', 'torneos', 'circuito', 'comparar', 'favoritos', 'legal']) {
+    for (const ruta of ['', 'jugadores', 'torneos', 'novedades', 'circuito', 'comparar', 'favoritos', 'legal']) {
       const p = await b.newPage(), mal = x => fallas.push(`${c} #/${ruta}: ${x}`);
       p.on('pageerror', e => mal('error de JS: ' + e.message));
       p.on('console', m => m.type() === 'error' && !/Failed to load resource/.test(m.text()) && mal('consola: ' + m.text()));

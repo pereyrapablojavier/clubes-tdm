@@ -14,7 +14,7 @@ import re
 import shutil
 import unicodedata
 from collections import defaultdict
-from datetime import datetime
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import clubcfg
@@ -267,6 +267,7 @@ def build():
     calendar = build_calendar(players)
     equipos = build_equipos(players)
     circuito = build_circuito(players, fet)
+    novedades = build_novedades(players, calendar, equipos, circuito)
 
     # --- write
     if OUT.exists():
@@ -280,6 +281,7 @@ def build():
         (OUT / "data" / "equipos.json").write_text(json.dumps(equipos, ensure_ascii=False, separators=(",", ":")))
     if circuito:
         (OUT / "data" / "circuito.json").write_text(json.dumps(circuito, ensure_ascii=False, separators=(",", ":")))
+    (OUT / "data" / "novedades.json").write_text(json.dumps(novedades, ensure_ascii=False, separators=(",", ":")))
     (OUT / "data" / "players.json").write_text(json.dumps(players, ensure_ascii=False, separators=(",", ":")))
     print(f"{CFG['slug']}: sitio generado en {OUT.relative_to(ROOT)} — {len(players)} jugadores")
     return True
@@ -792,6 +794,60 @@ def build_equipos(players):
                     "d_l": s["d_l"], "w": tot_w, "l": tot_l, "pct": pct(tot_w, tot_w + tot_l), "enc": len(s["enc"])})
     jug.sort(key=lambda j: (-(j["w"] + j["l"]), -j["w"]))
     return {"updated": raw.get("updated"), "competencias": comps, "proximos": upcoming, "jugadores": jug}
+
+
+NOVEDADES_DIAS = 400  # cuánto hacia atrás llega la página de Novedades
+
+
+def build_novedades(players, calendar, equipos, circuito):
+    """Todo lo que les pasó a los jugadores del club, con fecha (para la página Novedades: filtrar por fechas y por tipo).
+    Cada evento: t = tipo (torneo, liga, copa, gs, ss, podio, rank), d = fecha, id = jugador del sitio y los datos propios del tipo."""
+    desde = (date.today() - timedelta(days=NOVEDADES_DIAS)).isoformat()
+    ev = []
+    for p in players.values():
+        t = p.get("tmt") or {}
+        for tr in t.get("tours") or []:   # torneos TMT: partidos y puntos de rating de cada jugador
+            if tr["date"] >= desde:
+                ev.append({"t": "torneo", "d": tr["date"], "id": p["id"], "x": tr["tid"], "n": tr["name"], "w": tr["w"], "l": tr["l"],
+                           "v": tr["var"], "pre": tr.get("pre"), "post": tr.get("post")})
+        h = []  # ranking de FETEMBA: cada publicación (sin repetir fechas) y cuánto cambió respecto de la anterior
+        for x in (p.get("fet") or {}).get("hist") or []:
+            if x[1] is not None and (not h or h[-1][0] != x[0]):
+                h.append(x)
+        for a, b in zip(h, h[1:]):
+            if b[0] >= desde and b[1] != a[1]:
+                ev.append({"t": "rank", "d": b[0], "id": p["id"], "pts": b[1], "v": b[1] - a[1], "pos": b[2]})
+    by_fet = {str(p["fet"]["id"]): p["id"] for p in players.values() if p.get("fet")}
+    for c in (equipos or {}).get("competencias") or []:   # Liga de Equipos y Copa de Clubes: lo de cada jugador en cada encuentro
+        for e in c["encuentros"]:
+            if not e.get("played") or not e.get("fecha") or e["fecha"] < desde:
+                continue
+            por = {}
+            for q in e["partidos"]:
+                for fid, nom, sid in q["spin"]:
+                    a = por.setdefault(fid, {"id": sid or by_fet.get(fid), "name": nom, "s": [0, 0], "d": [0, 0], "ap": 0})
+                    a["ap"] += 1
+                    if q["w"] is not None:
+                        a["s" if q["t"] == "S" else "d"][0 if q["w"] else 1] += 1
+            for a in por.values():
+                if a["id"]:
+                    ev.append({"t": c["tipo"], "d": e["fecha"], "id": a["id"], "x": e["id"], "n": ("Liga" + (f" · {c['cat']}" if c.get("cat") else "")) if c["tipo"] == "liga" else "Copa de Clubes",
+                               "eq": c["team"], "r": e["rival"], "loc": e["local"], "gf": e["gf"], "gc": e["gc"], "res": e["res"],
+                               "s": a["s"], "dd": a["d"], "ap": a["ap"]})
+    for e in (circuito or {}).get("eventos") or []:   # Grand Slam y Super Series
+        if e["f"] >= desde:
+            for q in e["part"]:
+                if q.get("id"):
+                    ev.append({"t": e["tipo"].lower(), "d": e["f"], "id": q["id"], "x": e["id"], "n": e["ev"],
+                               "cat": ", ".join(c[1] for c in q.get("cats") or []), "w": q["g"], "l": q["p"], "pu": q["pu"], "ll": q["ll"]})
+    for t in (calendar or {}).get("past") or []:   # podios en los torneos que organiza el club
+        if t.get("date") and t["date"] >= desde:
+            for d in t["divs"]:
+                for q in d["podio"]:
+                    if q.get("site") and q["pos"] <= 3:
+                        ev.append({"t": "podio", "d": t["date"], "id": q["c"], "x": t["code"], "n": t["name"], "div": d["div"], "pos": q["pos"]})
+    ev.sort(key=lambda x: (x["d"], x["t"]), reverse=True)
+    return {"updated": datetime.now(timezone.utc).isoformat(timespec="seconds"), "desde": desde, "eventos": ev}
 
 
 def _count(it):

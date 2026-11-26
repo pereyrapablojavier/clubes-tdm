@@ -116,6 +116,14 @@ Al terminar, las Actions mandan un mensaje por Telegram (scripts/avisar_corrida.
 - Para no recibir los de las corridas que salen bien: Settings → Secrets and variables → Actions → pestaña *Variables* → `TELEGRAM_RESUMENES` = `no`
   (las fallas se avisan siempre).
 
+## Página Novedades de la última semana (Mi Club)
+
+Muestra cómo les fue a los jugadores del club en un período (por defecto, la última semana): torneos TMT con los puntos de rating ganados o
+perdidos, Liga y Copa de Clubes (resultado del encuentro y aporte de cada jugador en singles y dobles), Grand Slam y Super Series, podios en
+los torneos del club y cambios en el ranking de FETEMBA. Se filtra por rango de fechas, por tipo y por jugador, y se agrupa por jugador o por fecha. Si no hay
+nada en el período, lo dice y ofrece saltar a la última semana con novedades. Los datos salen de las mismas descargas de siempre:
+`build.py` arma `data/novedades.json` (últimos 400 días; `NOVEDADES_DIAS`) y no hace falta ninguna Action nueva.
+
 ## Vista previa al compartir (WhatsApp, Telegram…)
 
 Cada club tiene `clubes/<slug>/og.png` (1200x630) y la portada `config/og.png`. Se generan con

@@ -342,3 +342,30 @@ details.circ .fecha span { font-size: 10px; letter-spacing: .5px; }
 .cat-lista .list li { padding: 6px 0; }
 #catTabs { max-width: 100%; }
 @media (max-width: 520px) { #catTabs button { padding: 6px 7px; font-size: 12px; } .card-head:has(#catTabs) { flex-wrap: wrap; gap: 8px; } }
+
+/* trivias */
+.triv-card { display: flex; gap: 14px; align-items: flex-start; text-decoration: none; color: inherit; }
+.triv-card:hover { border-color: var(--celeste); }
+.triv-ic { font-size: 34px; line-height: 1; }
+.triv { max-width: 720px; }
+.triv-prog { display: flex; justify-content: space-between; margin: 6px 0 4px; }
+.triv-bar { margin: 0 0 14px; }
+.triv-q { padding: 18px; }
+.triv-texto { font: 600 20px/1.3 Inter, sans-serif; margin: 0 0 16px; }
+.triv-ops { display: grid; gap: 10px; }
+.triv-ops.vf { grid-template-columns: 1fr 1fr; }
+.triv-op { display: flex; align-items: center; gap: 10px; text-align: left; padding: 14px 16px; border: 2px solid var(--linea); border-radius: 12px; background: var(--card); color: var(--tinta); font: 600 16px Inter, sans-serif; cursor: pointer; }
+.triv-op:hover:not(:disabled) { border-color: var(--celeste); background: var(--celeste-3); }
+.triv-op:disabled { cursor: default; opacity: .75; }
+.triv-op.ok { border-color: var(--ok); background: #E3F5EC; color: #0E5A37; opacity: 1; }
+.triv-op.mal { border-color: var(--mal); background: #FBE9E9; color: #8A1C1C; opacity: 1; }
+.triv-n { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--celeste-3); color: var(--azul); font-size: 13px; }
+.triv-fb { margin-top: 14px; padding: 12px 14px; border-radius: 12px; }
+.triv-fb.ok { background: #E3F5EC; color: #0E5A37; } .triv-fb.mal { background: #FBE9E9; color: #8A1C1C; }
+.triv-score { font: 700 64px "Barlow Condensed", sans-serif; line-height: 1; } .triv-score span { font-size: 28px; color: var(--gris); }
+.triv-rev { padding: 10px 0; border-top: 1px solid var(--linea); } .triv-rev:first-of-type { border-top: 0; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .triv-op.ok, :root:not([data-theme="light"]) .triv-fb.ok { background: #123325; color: #7ED6A8; }
+  :root:not([data-theme="light"]) .triv-op.mal, :root:not([data-theme="light"]) .triv-fb.mal { background: #3A1616; color: #F2A3A3; }
+}
+@media (max-width: 420px) { .triv-ops.vf { grid-template-columns: 1fr; } .triv-texto { font-size: 18px; } }

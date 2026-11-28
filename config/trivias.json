@@ -1,0 +1,94 @@
+[
+  {
+    "id": "reglas",
+    "titulo": "Reglas del tenis de mesa",
+    "icono": "📏",
+    "descripcion": "12 preguntas rápidas sobre el reglamento: puntos, saque, medidas y faltas. Verdadero o falso, números y palabras.",
+    "preguntas": [
+      {
+        "tipo": "numero",
+        "texto": "¿A cuántos puntos se gana un set (si no hay empate a 10)?",
+        "opciones": ["11 puntos", "21 puntos"],
+        "correcta": 0,
+        "explicacion": "Desde 2001 los sets son a 11 puntos. Los 21 eran de las reglas anteriores."
+      },
+      {
+        "tipo": "vf",
+        "texto": "Con el set 10-10, gana el primero que llegue a 11.",
+        "opciones": ["Verdadero", "Falso"],
+        "correcta": 1,
+        "explicacion": "Falso. Hay que sacar 2 puntos de diferencia: se sigue jugando hasta que alguien gane por 2 (12-10, 13-11…)."
+      },
+      {
+        "tipo": "numero",
+        "texto": "¿Cada cuántos puntos cambia el saque?",
+        "opciones": ["Cada 2 puntos", "Cada 5 puntos"],
+        "correcta": 0,
+        "explicacion": "Cada jugador saca 2 puntos seguidos. Cuando el set llega a 10-10, el saque cambia en cada punto."
+      },
+      {
+        "tipo": "numero",
+        "texto": "En un partido al mejor de 5 sets, ¿cuántos sets hay que ganar?",
+        "opciones": ["3 sets", "5 sets"],
+        "correcta": 0,
+        "explicacion": "El mejor de 5 se gana con 3 sets (puede terminar 3-0, 3-1 o 3-2)."
+      },
+      {
+        "tipo": "palabra",
+        "texto": "En el saque, la palma de la mano que lanza la pelota tiene que estar…",
+        "opciones": ["Abierta y quieta", "Cerrada en puño"],
+        "correcta": 0,
+        "explicacion": "La pelota se apoya en la palma abierta, plana y quieta, y desde ahí se lanza hacia arriba."
+      },
+      {
+        "tipo": "numero",
+        "texto": "¿Cuánto tiene que subir, como mínimo, la pelota al lanzarla para sacar?",
+        "opciones": ["16 cm", "30 cm"],
+        "correcta": 0,
+        "explicacion": "El lanzamiento tiene que ser casi vertical y subir al menos 16 cm desde la palma."
+      },
+      {
+        "tipo": "vf",
+        "texto": "Si al sacar la pelota toca la red y después cae bien en la mesa del rival, se repite el saque.",
+        "opciones": ["Verdadero", "Falso"],
+        "correcta": 0,
+        "explicacion": "Verdadero: es un «let» y el saque se repite, sin límite de veces."
+      },
+      {
+        "tipo": "vf",
+        "texto": "En dobles, el saque va en diagonal: de la mitad derecha de quien saca a la mitad derecha de los rivales.",
+        "opciones": ["Verdadero", "Falso"],
+        "correcta": 0,
+        "explicacion": "Verdadero. En dobles el saque siempre es de derecha a derecha, cruzado."
+      },
+      {
+        "tipo": "numero",
+        "texto": "¿Cuánto mide de largo una mesa oficial?",
+        "opciones": ["2,74 m", "2,44 m"],
+        "correcta": 0,
+        "explicacion": "2,74 m de largo, 1,525 m de ancho y 76 cm de alto."
+      },
+      {
+        "tipo": "palabra",
+        "texto": "¿De qué colores tienen que ser las dos gomas de la paleta?",
+        "opciones": ["Una roja y una negra", "Las dos rojas"],
+        "correcta": 0,
+        "explicacion": "Un lado rojo y el otro negro, así el rival sabe con qué goma le pegaste."
+      },
+      {
+        "tipo": "vf",
+        "texto": "Tocar la mesa con la mano libre durante el punto es falta y se pierde el punto.",
+        "opciones": ["Verdadero", "Falso"],
+        "correcta": 0,
+        "explicacion": "Verdadero. Tampoco se puede mover la mesa durante el punto. En cambio, apoyarte en ella entre puntos no es falta."
+      },
+      {
+        "tipo": "numero",
+        "texto": "¿Cuánto puede durar, como máximo, el descanso entre sets?",
+        "opciones": ["1 minuto", "5 minutos"],
+        "correcta": 0,
+        "explicacion": "Entre sets hay un descanso de hasta 1 minuto (por ejemplo, para secarse y tomar agua)."
+      }
+    ]
+  }
+]

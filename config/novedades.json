@@ -1,5 +1,12 @@
 [
  {
+  "id": 10,
+  "fecha": "2026-11-28",
+  "icono": "🧠",
+  "titulo": "Nueva sección: Trivia",
+  "detalle": "En Mi Club > Trivia podés jugar y aprender. La primera es sobre las reglas del tenis de mesa: 12 preguntas de verdadero o falso, números y palabras. Respondés una, ves si acertaste y pasás a la siguiente."
+ },
+ {
   "id": 9,
   "fecha": "2026-11-26",
   "icono": "📈",

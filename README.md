@@ -132,6 +132,22 @@ de cada jugador actual en cada fecha con el rating que tenía (después de cada 
 se fueron del club; para poder mostrarlos, cada actualización guarda una foto semanal del plantel en la rama `datos` (`<club>/historial_categorias.json`) y, cuando hay una
 foto de esa época, aparece "Ya no están en el club".
 
+## Trivias (Mi Club → Trivia)
+
+Las trivias se escriben en `config/trivias.json` (para todos los clubes) y, si hace falta, en `clubes/<slug>/trivias.json` (solo de ese club; con el mismo `id`
+pisa a la general). Para sumar una trivia, agregar un objeto a la lista y listo: aparece sola en la página.
+
+```json
+{"id": "saque", "titulo": "El saque", "icono": "🏓", "descripcion": "Texto corto para la tarjeta.",
+ "preguntas": [
+   {"tipo": "vf", "texto": "¿Verdadero o falso?...", "opciones": ["Verdadero", "Falso"], "correcta": 0, "explicacion": "Por qué (opcional)."},
+   {"tipo": "numero", "texto": "¿Cuánto...?", "opciones": ["16 cm", "30 cm"], "correcta": 0}
+ ]}
+```
+`tipo` (`vf`, `numero`, `palabra`) solo orienta el estilo: en `vf` las opciones no se mezclan; en las demás se mezclan cada vez. Cada pregunta lleva de 2 a 4 opciones y
+`correcta` es la posición de la correcta (0 = la primera). Se valida al armar el sitio y en cada pull request (`python scripts/trivias.py` para probar). Cada persona
+ve su mejor puntaje en su propio dispositivo.
+
 ## Vista previa al compartir (WhatsApp, Telegram…)
 
 Cada club tiene `clubes/<slug>/og.png` (1200x630) y la portada `config/og.png`. Se generan con

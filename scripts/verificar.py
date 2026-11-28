@@ -48,6 +48,10 @@ def previo():
             if not (d / a).exists():
                 mal(f"clubes/{d.name}/{a}: falta (la vista previa al compartir lo necesita: python scripts/og_image.py)")
     json.loads((ROOT / "config/sitio.json").read_text())
+    import trivias
+    for slug in [None] + clubcfg.slugs(incluir_inactivos=True):
+        for p in trivias.cargar(slug)[1]:
+            mal(p)
 
 
 def sitio():

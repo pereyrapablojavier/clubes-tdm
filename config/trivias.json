@@ -1,9 +1,9 @@
 [
   {
-    "id": "reglas",
-    "titulo": "Reglas del tenis de mesa",
-    "icono": "📏",
-    "descripcion": "Puntos, saque, medidas y faltas. 11 preguntas por partida, con 11 versiones distintas: verdadero o falso, números y palabras.",
+    "id": "puntos-sets",
+    "titulo": "Puntos, sets y partidos",
+    "icono": "🏁",
+    "descripcion": "Cómo se gana un punto, un set y un partido.",
     "preguntas": [
       {
         "tipo": "numero",
@@ -46,6 +46,84 @@
         "explicacion": "El mejor de 5 se gana con 3 sets (puede terminar 3-0, 3-1 o 3-2)."
       },
       {
+        "tipo": "numero",
+        "texto": "Con el set empatado 10-10, ¿cada cuántos puntos cambia el saque?",
+        "opciones": [
+          "En cada punto",
+          "Cada 2 puntos"
+        ],
+        "correcta": 0,
+        "explicacion": "Desde 10-10 los jugadores se alternan el saque en cada punto hasta que alguien gane por 2."
+      },
+      {
+        "tipo": "numero",
+        "texto": "En un partido al mejor de 7 sets, ¿cuántos sets hay que ganar?",
+        "opciones": [
+          "4 sets",
+          "7 sets"
+        ],
+        "correcta": 0,
+        "explicacion": "El mejor de 7 se gana con 4 sets."
+      },
+      {
+        "tipo": "vf",
+        "texto": "El ganador del sorteo puede elegir si saca, si recibe o de qué lado de la mesa empieza.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 0,
+        "explicacion": "Verdadero. Quien gana el sorteo elige una opción y el rival elige entre las que quedan."
+      },
+      {
+        "tipo": "vf",
+        "texto": "Después de cada set, los jugadores cambian de lado de la mesa.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 0,
+        "explicacion": "Verdadero. Los jugadores cambian de lado al terminar cada set."
+      },
+      {
+        "tipo": "numero",
+        "texto": "En el set decisivo, ¿cuándo cambian de lado los jugadores?",
+        "opciones": [
+          "Cuando uno llega a 5 puntos",
+          "Cuando uno llega a 8 puntos"
+        ],
+        "correcta": 0,
+        "explicacion": "En el último set (el decisivo) también se cambia de lado cuando el primero llega a 5 puntos."
+      },
+      {
+        "tipo": "numero",
+        "texto": "¿Cuánto dura, como máximo, la práctica (calentamiento) antes de un partido?",
+        "opciones": [
+          "2 minutos",
+          "10 minutos"
+        ],
+        "correcta": 0,
+        "explicacion": "El peloteo previo es de hasta 2 minutos."
+      },
+      {
+        "tipo": "numero",
+        "texto": "¿Cuánto puede durar, como máximo, el descanso entre sets?",
+        "opciones": [
+          "1 minuto",
+          "5 minutos"
+        ],
+        "correcta": 0,
+        "explicacion": "Entre sets hay un descanso de hasta 1 minuto (por ejemplo, para secarse y tomar agua)."
+      }
+    ]
+  },
+  {
+    "id": "saque",
+    "titulo": "El saque",
+    "icono": "🏓",
+    "descripcion": "Lanzamiento, palma, let y saque en dobles.",
+    "preguntas": [
+      {
         "tipo": "palabra",
         "texto": "En el saque, la palma de la mano que lanza la pelota tiene que estar…",
         "opciones": [
@@ -86,6 +164,84 @@
         "explicacion": "Verdadero. En dobles el saque siempre es de derecha a derecha, cruzado."
       },
       {
+        "tipo": "palabra",
+        "texto": "Para sacar, ¿dónde tiene que estar la pelota cuando se la lanza?",
+        "opciones": [
+          "Detrás de la línea de fondo y por encima de la mesa",
+          "Debajo de la mesa"
+        ],
+        "correcta": 0,
+        "explicacion": "El que saca tiene que lanzar la pelota por encima de la superficie de juego y detrás de la línea de fondo de la mesa."
+      },
+      {
+        "tipo": "vf",
+        "texto": "Al lanzar la pelota para sacar, se le puede dar efecto (hacerla girar).",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 1,
+        "explicacion": "Falso. La pelota se lanza casi vertical y sin efecto; recién se le da efecto con la paleta."
+      },
+      {
+        "tipo": "vf",
+        "texto": "En el saque, hay que pegarle a la pelota cuando ya está cayendo.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 0,
+        "explicacion": "Verdadero. Se le pega cuando baja, después de haber llegado al punto más alto del lanzamiento."
+      },
+      {
+        "tipo": "vf",
+        "texto": "Si el que recibe no está listo y no intenta devolver, el saque se repite.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 0,
+        "explicacion": "Verdadero. Es un «let»: se repite el saque."
+      },
+      {
+        "tipo": "vf",
+        "texto": "En singles, el saque puede ir a cualquier lado de la mesa del rival.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 0,
+        "explicacion": "Verdadero. En singles no hay diagonal obligatoria: sí en dobles."
+      },
+      {
+        "tipo": "vf",
+        "texto": "El que saca puede tapar la pelota con el cuerpo o con el brazo para que el rival no la vea.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 1,
+        "explicacion": "Falso. La pelota tiene que verse desde que se lanza hasta que se golpea."
+      },
+      {
+        "tipo": "palabra",
+        "texto": "Para sacar, la mano libre que sostiene la pelota tiene que tener…",
+        "opciones": [
+          "Los dedos juntos y el pulgar separado",
+          "Los dedos cerrados en puño"
+        ],
+        "correcta": 0,
+        "explicacion": "La palma queda abierta, plana y quieta, con los dedos juntos y el pulgar separado."
+      }
+    ]
+  },
+  {
+    "id": "mesa-red-pelota",
+    "titulo": "La mesa, la red y la pelota",
+    "icono": "📐",
+    "descripcion": "Medidas y características del material de juego.",
+    "preguntas": [
+      {
         "tipo": "numero",
         "texto": "¿Cuánto mide de largo una mesa oficial?",
         "opciones": [
@@ -96,34 +252,34 @@
         "explicacion": "2,74 m de largo, 1,525 m de ancho y 76 cm de alto."
       },
       {
-        "tipo": "palabra",
-        "texto": "Las dos caras de la paleta tienen gomas: una tiene que ser negra, ¿y la otra?",
+        "tipo": "numero",
+        "texto": "¿Qué altura tiene la red?",
         "opciones": [
-          "De color: roja, rosa, verde, violeta o azul",
-          "Amarilla o naranja"
+          "15,25 cm",
+          "25 cm"
         ],
         "correcta": 0,
-        "explicacion": "Un lado negro y el otro rojo, rosa, verde, violeta o azul (reglamento TMT ProTour 3.1.2). Así el rival sabe con qué goma le pegaste."
-      },
-      {
-        "tipo": "vf",
-        "texto": "Tocar la mesa con la mano libre durante el punto es falta y se pierde el punto.",
-        "opciones": [
-          "Verdadero",
-          "Falso"
-        ],
-        "correcta": 0,
-        "explicacion": "Verdadero. Tampoco se puede mover la mesa durante el punto. En cambio, apoyarte en ella entre puntos no es falta."
+        "explicacion": "La red mide 15,25 cm (6 pulgadas) de alto, medida desde la superficie de la mesa."
       },
       {
         "tipo": "numero",
-        "texto": "¿Cuánto puede durar, como máximo, el descanso entre sets?",
+        "texto": "¿A qué altura del piso está la superficie de la mesa?",
         "opciones": [
-          "1 minuto",
-          "5 minutos"
+          "76 cm",
+          "90 cm"
         ],
         "correcta": 0,
-        "explicacion": "Entre sets hay un descanso de hasta 1 minuto (por ejemplo, para secarse y tomar agua)."
+        "explicacion": "La mesa oficial tiene 76 cm de altura, 2,74 m de largo y 1,525 m de ancho."
+      },
+      {
+        "tipo": "numero",
+        "texto": "¿Cuánto mide de ancho una mesa oficial?",
+        "opciones": [
+          "1,525 m",
+          "1,2 m"
+        ],
+        "correcta": 0,
+        "explicacion": "1,525 m de ancho. Cada mitad está dividida por la red y tiene 1,37 m de largo."
       },
       {
         "tipo": "vf",
@@ -157,33 +313,61 @@
       },
       {
         "tipo": "numero",
-        "texto": "¿Qué altura tiene la red?",
+        "texto": "¿Cuánto mide de largo la red?",
         "opciones": [
-          "15,25 cm",
-          "25 cm"
+          "1,83 m",
+          "1,525 m"
         ],
         "correcta": 0,
-        "explicacion": "La red mide 15,25 cm (6 pulgadas) de alto, medida desde la superficie de la mesa."
+        "explicacion": "La red mide 1,83 m: el ancho de la mesa (1,525 m) más 15,25 cm que sobresalen a cada lado."
+      },
+      {
+        "tipo": "palabra",
+        "texto": "¿De qué color es la superficie de juego de la mesa?",
+        "opciones": [
+          "Oscura y mate (sin brillo)",
+          "Blanca y brillante"
+        ],
+        "correcta": 0,
+        "explicacion": "Es de un color oscuro uniforme y mate, para que se vea bien la pelota (que es blanca o naranja)."
       },
       {
         "tipo": "numero",
-        "texto": "¿A qué altura del piso está la superficie de la mesa?",
+        "texto": "¿Cuánto miden de ancho las líneas blancas que bordean la mesa?",
         "opciones": [
-          "76 cm",
-          "90 cm"
+          "2 cm",
+          "10 cm"
         ],
         "correcta": 0,
-        "explicacion": "La mesa oficial tiene 76 cm de altura, 2,74 m de largo y 1,525 m de ancho."
+        "explicacion": "Las líneas laterales y de fondo son blancas y de 2 cm de ancho. En dobles se suma una línea central de 3 mm."
       },
       {
         "tipo": "numero",
-        "texto": "¿Cuánto mide de ancho una mesa oficial?",
+        "texto": "Si se deja caer la pelota desde 30 cm sobre la mesa, ¿cuánto tiene que picar aproximadamente?",
         "opciones": [
-          "1,525 m",
-          "1,2 m"
+          "Unos 23 cm",
+          "Unos 10 cm"
         ],
         "correcta": 0,
-        "explicacion": "1,525 m de ancho. Cada mitad está dividida por la red y tiene 1,37 m de largo."
+        "explicacion": "La mesa tiene que dar un pique parejo: unos 23 cm cuando se deja caer la pelota desde 30 cm."
+      }
+    ]
+  },
+  {
+    "id": "paleta-ropa-tiempos",
+    "titulo": "Paleta, ropa y tiempos",
+    "icono": "🎽",
+    "descripcion": "Gomas, madera, vestimenta y tiempos de juego.",
+    "preguntas": [
+      {
+        "tipo": "palabra",
+        "texto": "Las dos caras de la paleta tienen gomas: una tiene que ser negra, ¿y la otra?",
+        "opciones": [
+          "De color: roja, rosa, verde, violeta o azul",
+          "Amarilla o naranja"
+        ],
+        "correcta": 0,
+        "explicacion": "Un lado negro y el otro rojo, rosa, verde, violeta o azul (reglamento TMT ProTour 3.1.2). Así el rival sabe con qué goma le pegaste."
       },
       {
         "tipo": "palabra",
@@ -206,34 +390,102 @@
         "explicacion": "Una goma con esponja no puede superar los 4 mm; sin esponja (pimples afuera) el máximo es 2 mm."
       },
       {
-        "tipo": "vf",
-        "texto": "El ganador del sorteo puede elegir si saca, si recibe o de qué lado de la mesa empieza.",
+        "tipo": "numero",
+        "texto": "En el sistema de aceleración, ¿a los cuántos minutos de juego en un set se activa?",
         "opciones": [
-          "Verdadero",
-          "Falso"
+          "10 minutos",
+          "20 minutos"
         ],
         "correcta": 0,
-        "explicacion": "Verdadero. Quien gana el sorteo elige una opción y el rival elige entre las que quedan."
-      },
-      {
-        "tipo": "vf",
-        "texto": "Después de cada set, los jugadores cambian de lado de la mesa.",
-        "opciones": [
-          "Verdadero",
-          "Falso"
-        ],
-        "correcta": 0,
-        "explicacion": "Verdadero. Los jugadores cambian de lado al terminar cada set."
+        "explicacion": "Si el set no terminó a los 10 minutos (y no están 9-9 o más), se activa: el saque cambia en cada punto."
       },
       {
         "tipo": "numero",
-        "texto": "En el set decisivo, ¿cuándo cambian de lado los jugadores?",
+        "texto": "Con el sistema de aceleración, el que recibe gana el punto si logra devolver bien…",
         "opciones": [
-          "Cuando uno llega a 5 puntos",
-          "Cuando uno llega a 8 puntos"
+          "13 veces",
+          "20 veces"
         ],
         "correcta": 0,
-        "explicacion": "En el último set (el decisivo) también se cambia de lado cuando el primero llega a 5 puntos."
+        "explicacion": "Con la aceleración, si el receptor hace 13 devoluciones correctas seguidas, gana el punto."
+      },
+      {
+        "tipo": "vf",
+        "texto": "Se pueden usar pegamentos con solventes volátiles («speed glue») para pegar las gomas.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 1,
+        "explicacion": "Falso. Están prohibidos desde 2008: sus vapores son tóxicos y daban una ventaja de velocidad."
+      },
+      {
+        "tipo": "vf",
+        "texto": "En torneos internacionales, las gomas tienen que estar aprobadas por la ITTF.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 0,
+        "explicacion": "Verdadero. Las gomas autorizadas llevan el logo de la ITTF y figuran en su lista oficial."
+      },
+      {
+        "tipo": "vf",
+        "texto": "La pala de la paleta puede tener cualquier tamaño, forma y peso, pero tiene que ser plana y rígida.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 0,
+        "explicacion": "Verdadero. Lo que se regula es su construcción (madera natural en al menos el 85%) y las gomas, no su tamaño."
+      },
+      {
+        "tipo": "vf",
+        "texto": "Un jugador puede jugar con una camiseta del mismo color que la pelota.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 1,
+        "explicacion": "Falso. El color principal de la camiseta y del short tiene que ser distinto del de la pelota, para que se la vea bien."
+      },
+      {
+        "tipo": "vf",
+        "texto": "Se puede cambiar de paleta durante un partido sin pedir permiso.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 1,
+        "explicacion": "Falso. Solo se puede cambiar si la paleta se rompió accidentalmente."
+      },
+      {
+        "tipo": "vf",
+        "texto": "Cada jugador o pareja puede pedir un tiempo muerto de hasta 1 minuto por partido.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 0,
+        "explicacion": "Verdadero. Es un único tiempo muerto de hasta 1 minuto."
+      }
+    ]
+  },
+  {
+    "id": "faltas-puntos",
+    "titulo": "Faltas y puntos",
+    "icono": "⚖️",
+    "descripcion": "Qué es falta, qué es let y quién gana el punto.",
+    "preguntas": [
+      {
+        "tipo": "vf",
+        "texto": "Tocar la mesa con la mano libre durante el punto es falta y se pierde el punto.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 0,
+        "explicacion": "Verdadero. Tampoco se puede mover la mesa durante el punto. En cambio, apoyarte en ella entre puntos no es falta."
       },
       {
         "tipo": "vf",
@@ -296,55 +548,53 @@
         "explicacion": "Verdadero. Tampoco se puede mover la mesa."
       },
       {
-        "tipo": "numero",
-        "texto": "Con el set empatado 10-10, ¿cada cuántos puntos cambia el saque?",
+        "tipo": "vf",
+        "texto": "Si la pelota pica dos veces en tu lado antes de que la devuelvas, perdés el punto.",
         "opciones": [
-          "En cada punto",
-          "Cada 2 puntos"
+          "Verdadero",
+          "Falso"
         ],
         "correcta": 0,
-        "explicacion": "Desde 10-10 los jugadores se alternan el saque en cada punto hasta que alguien gane por 2."
+        "explicacion": "Verdadero. Solo puede picar una vez en tu lado."
       },
       {
-        "tipo": "numero",
-        "texto": "En el sistema de aceleración, ¿a los cuántos minutos de juego en un set se activa?",
+        "tipo": "vf",
+        "texto": "Pegarle dos veces seguidas a la pelota en un mismo golpe hace perder el punto.",
         "opciones": [
-          "10 minutos",
-          "20 minutos"
+          "Verdadero",
+          "Falso"
         ],
         "correcta": 0,
-        "explicacion": "Si el set no terminó a los 10 minutos (y no están 9-9 o más), se activa: el saque cambia en cada punto."
+        "explicacion": "Verdadero. Cada jugador pega una sola vez por turno: el doble golpe es falta."
       },
       {
-        "tipo": "numero",
-        "texto": "Con el sistema de aceleración, el que recibe gana el punto si logra devolver bien…",
+        "tipo": "vf",
+        "texto": "Si la pelota que te mandó el rival te toca el cuerpo o la ropa antes de picar en tu lado de la mesa, el punto es para el rival.",
         "opciones": [
-          "13 veces",
-          "20 veces"
+          "Verdadero",
+          "Falso"
         ],
         "correcta": 0,
-        "explicacion": "Con la aceleración, si el receptor hace 13 devoluciones correctas seguidas, gana el punto."
+        "explicacion": "Verdadero. Se llama «obstrucción»: la pelota solo se puede tocar con la paleta (o con la mano que la sostiene)."
       },
       {
-        "tipo": "numero",
-        "texto": "En un partido al mejor de 7 sets, ¿cuántos sets hay que ganar?",
+        "tipo": "vf",
+        "texto": "Si tu devolución pica primero en tu propio lado y después pasa la red, perdés el punto.",
         "opciones": [
-          "4 sets",
-          "7 sets"
+          "Verdadero",
+          "Falso"
         ],
         "correcta": 0,
-        "explicacion": "El mejor de 7 se gana con 4 sets."
-      },
-      {
-        "tipo": "numero",
-        "texto": "¿Cuánto dura, como máximo, la práctica (calentamiento) antes de un partido?",
-        "opciones": [
-          "2 minutos",
-          "10 minutos"
-        ],
-        "correcta": 0,
-        "explicacion": "El peloteo previo es de hasta 2 minutos."
-      },
+        "explicacion": "Verdadero. La devolución tiene que pasar la red (o rodearla) y picar directamente en la mesa del rival."
+      }
+    ]
+  },
+  {
+    "id": "dobles-casos",
+    "titulo": "Dobles y casos especiales",
+    "icono": "👥",
+    "descripcion": "Dobles, tarjetas y situaciones raras.",
+    "preguntas": [
       {
         "tipo": "palabra",
         "texto": "En dobles, los dos integrantes de una pareja le pegan a la pelota…",
@@ -367,36 +617,6 @@
       },
       {
         "tipo": "palabra",
-        "texto": "Para sacar, ¿dónde tiene que estar la pelota cuando se la lanza?",
-        "opciones": [
-          "Detrás de la línea de fondo y por encima de la mesa",
-          "Debajo de la mesa"
-        ],
-        "correcta": 0,
-        "explicacion": "El que saca tiene que lanzar la pelota por encima de la superficie de juego y detrás de la línea de fondo de la mesa."
-      },
-      {
-        "tipo": "vf",
-        "texto": "Al lanzar la pelota para sacar, se le puede dar efecto (hacerla girar).",
-        "opciones": [
-          "Verdadero",
-          "Falso"
-        ],
-        "correcta": 1,
-        "explicacion": "Falso. La pelota se lanza casi vertical y sin efecto; recién se le da efecto con la paleta."
-      },
-      {
-        "tipo": "vf",
-        "texto": "En el saque, hay que pegarle a la pelota cuando ya está cayendo.",
-        "opciones": [
-          "Verdadero",
-          "Falso"
-        ],
-        "correcta": 0,
-        "explicacion": "Verdadero. Se le pega cuando baja, después de haber llegado al punto más alto del lanzamiento."
-      },
-      {
-        "tipo": "palabra",
         "texto": "En el tenis de mesa, la tarjeta amarilla es…",
         "opciones": [
           "Una advertencia",
@@ -404,26 +624,6 @@
         ],
         "correcta": 0,
         "explicacion": "La tarjeta amarilla es una advertencia formal. Si hay una nueva falta, se muestran amarilla y roja juntas y se da punto al rival."
-      },
-      {
-        "tipo": "vf",
-        "texto": "Si el que recibe no está listo y no intenta devolver, el saque se repite.",
-        "opciones": [
-          "Verdadero",
-          "Falso"
-        ],
-        "correcta": 0,
-        "explicacion": "Verdadero. Es un «let»: se repite el saque."
-      },
-      {
-        "tipo": "vf",
-        "texto": "En singles, el saque puede ir a cualquier lado de la mesa del rival.",
-        "opciones": [
-          "Verdadero",
-          "Falso"
-        ],
-        "correcta": 0,
-        "explicacion": "Verdadero. En singles no hay diagonal obligatoria: sí en dobles."
       },
       {
         "tipo": "vf",
@@ -437,21 +637,81 @@
       },
       {
         "tipo": "vf",
-        "texto": "Si la pelota pica dos veces en tu lado antes de que la devuelvas, perdés el punto.",
+        "texto": "Si una interferencia externa (por ejemplo, otra pelota que entra a la mesa) molesta el punto, se repite.",
         "opciones": [
           "Verdadero",
           "Falso"
         ],
         "correcta": 0,
-        "explicacion": "Verdadero. Solo puede picar una vez en tu lado."
+        "explicacion": "Verdadero. Es un «let»: el punto se juega de nuevo."
+      },
+      {
+        "tipo": "vf",
+        "texto": "Si el rival manda la pelota por encima de tu fondo sin que pique en tu lado de la mesa, el punto es tuyo.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 0,
+        "explicacion": "Verdadero. Con esa devolución el rival no logró que la pelota pique en tu lado."
+      },
+      {
+        "tipo": "vf",
+        "texto": "En dobles, el orden de golpes es: quien saca, quien recibe, el compañero de quien sacó y el compañero de quien recibió.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 0,
+        "explicacion": "Verdadero. Los golpes de las dos parejas se alternan siempre en ese orden."
+      },
+      {
+        "tipo": "vf",
+        "texto": "Si la pelota pega en el poste de la red y cae en la mesa del rival, el punto sigue.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 0,
+        "explicacion": "Verdadero. Tocar la red o sus soportes no es falta si la pelota igual pasa y pica bien en el campo del rival."
+      },
+      {
+        "tipo": "vf",
+        "texto": "En el saque, la pelota tiene que picar primero en tu lado de la mesa y después en el del rival.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 0,
+        "explicacion": "Verdadero. Si pica primero en la mesa del rival, el saque es falta."
+      },
+      {
+        "tipo": "vf",
+        "texto": "El sistema de aceleración no se activa si en el set los dos jugadores ya tienen al menos 9 puntos.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 0,
+        "explicacion": "Verdadero. Cuando los dos llegaron a 9 puntos o más, el set se sigue jugando normalmente hasta terminar."
+      },
+      {
+        "tipo": "numero",
+        "texto": "¿Cuánto sobresalen los soportes de la red hacia afuera de la mesa?",
+        "opciones": [
+          "15,25 cm",
+          "30 cm"
+        ],
+        "correcta": 0,
+        "explicacion": "Los postes de la red quedan a 15,25 cm por fuera de la línea lateral de la mesa."
       }
     ]
   },
   {
-    "id": "protour",
-    "titulo": "Reglamento TMT ProTour",
-    "icono": "📘",
-    "descripcion": "Inscripción, partidos, rating, premios y disciplina, según el Reglamento para Torneos TMT ProTour (enero 2026). 11 preguntas por partida, con 11 versiones.",
+    "id": "tmt-salon",
+    "titulo": "TMT: salón y equipamiento",
+    "icono": "🏟️",
+    "descripcion": "Reglamento TMT ProTour: el lugar, las mesas y lo que se usa.",
     "preguntas": [
       {
         "tipo": "numero",
@@ -465,153 +725,33 @@
       },
       {
         "tipo": "numero",
-        "texto": "¿Cuántas horas tiene una preinscripción para ser abonada (transferencia o depósito) antes de que se elimine?",
+        "texto": "¿Qué área de juego mínima corresponde a cada mesa?",
         "opciones": [
-          "48 horas",
-          "24 horas"
+          "5 x 8 metros",
+          "3 x 6 metros"
         ],
         "correcta": 0,
-        "explicacion": "Art. 4.7: máximo 48 horas, subiendo el comprobante en el panel de control del jugador; vencido el plazo sin pago, se elimina la preinscripción."
+        "explicacion": "Art. 3.3.2: 5 x 8 metros para cada mesa, más el espacio de circulación."
       },
       {
         "tipo": "numero",
-        "texto": "El día del torneo, ¿con cuántos minutos de anticipación hay que presentarse en la mesa de control si ya estás inscripto?",
+        "texto": "¿Qué altura mínima tiene que tener el techo en un espacio cerrado?",
         "opciones": [
-          "30 minutos",
-          "10 minutos"
+          "4 metros",
+          "3 metros"
         ],
         "correcta": 0,
-        "explicacion": "Art. 4.6.3: hasta 30 minutos antes del inicio, para ser registrado e incluido en el sorteo. La inscripción presencial (si hay cupo) llega hasta 15 minutos antes."
-      },
-      {
-        "tipo": "vf",
-        "texto": "Un jugador puede anotarse en una competencia de una división inferior a la suya.",
-        "opciones": [
-          "Verdadero",
-          "Falso"
-        ],
-        "correcta": 1,
-        "explicacion": "Art. 4.2: en ningún caso puede participar en una competencia de nivel inferior. Sí puede anotarse en divisiones superiores (4.6.2)."
-      },
-      {
-        "tipo": "vf",
-        "texto": "El jugador que oficia de contador de tantos puede resolver una discusión durante el partido.",
-        "opciones": [
-          "Verdadero",
-          "Falso"
-        ],
-        "correcta": 1,
-        "explicacion": "Art. 4.9.2: no puede resolver ninguna disputa; tiene que pedir la intervención del Juez General o de sus asistentes."
+        "explicacion": "Art. 3.3.3: la altura mínima del techo es de 4 metros."
       },
       {
         "tipo": "numero",
-        "texto": "¿Cuántos tiempos muertos tiene derecho a pedir cada jugador durante un partido?",
+        "texto": "¿Cuántos lux de iluminación, aproximadamente, se piden como mínimo sobre la mesa?",
         "opciones": [
-          "1 tiempo muerto de 1 minuto",
-          "2 tiempos muertos de 1 minuto"
+          "400 lux",
+          "100 lux"
         ],
         "correcta": 0,
-        "explicacion": "Art. 6.7.3: 1 tiempo muerto de 1 minuto por partido."
-      },
-      {
-        "tipo": "numero",
-        "texto": "Si un jugador se lesiona, ¿cuánto se puede detener el partido como máximo?",
-        "opciones": [
-          "10 minutos",
-          "20 minutos"
-        ],
-        "correcta": 0,
-        "explicacion": "Art. 6.7.4: hasta 10 minutos. Si no vuelve a la mesa, se le da el partido a su oponente."
-      },
-      {
-        "tipo": "numero",
-        "texto": "¿Con qué resultado se da por ganado un partido por ausencia (walk over)?",
-        "opciones": [
-          "11-0 en todos los sets",
-          "11-5 en todos los sets"
-        ],
-        "correcta": 0,
-        "explicacion": "Art. 6.8.1.1: después de dos llamados por altavoz, el juez general da el partido por ganado 11 a 0 en todos los sets necesarios."
-      },
-      {
-        "tipo": "numero",
-        "texto": "En la primera fase (grupos todos contra todos), ¿cuántos puntos se dan por partido ganado y por partido perdido?",
-        "opciones": [
-          "2 por ganado y 1 por perdido",
-          "3 por ganado y 0 por perdido"
-        ],
-        "correcta": 0,
-        "explicacion": "Art. 6.5.2: 2 puntos por partido ganado y 1 punto por partido perdido."
-      },
-      {
-        "tipo": "palabra",
-        "texto": "¿Desde qué instancia los partidos se juegan al mejor de 5 sets?",
-        "opciones": [
-          "Desde octavos de final",
-          "Solo en la final"
-        ],
-        "correcta": 0,
-        "explicacion": "Art. 6.3: hasta 16avos de final inclusive es al mejor de 3 sets; desde 8vos de final, al mejor de 5."
-      },
-      {
-        "tipo": "vf",
-        "texto": "Quien gana un cruce en la segunda fase (llave de eliminación) suma el doble de puntos de rating que en la primera fase.",
-        "opciones": [
-          "Verdadero",
-          "Falso"
-        ],
-        "correcta": 0,
-        "explicacion": "Art. 7.2: los ganadores de los cruces de la segunda fase reciben el doble de lo indicado en la tabla de variación."
-      },
-      {
-        "tipo": "numero",
-        "texto": "Si el jugador de mayor puntaje le gana a otro con 750 puntos o más de diferencia, ¿cuántos puntos de rating suma?",
-        "opciones": [
-          "1 punto",
-          "10 puntos"
-        ],
-        "correcta": 0,
-        "explicacion": "Tabla del art. 7: ganar contra alguien con 750 o más de diferencia suma 1 punto, y si el de mayor puntaje pierde, descuenta 28."
-      },
-      {
-        "tipo": "vf",
-        "texto": "En un torneo se pueden entregar premios en dinero en cualquier división.",
-        "opciones": [
-          "Verdadero",
-          "Falso"
-        ],
-        "correcta": 1,
-        "explicacion": "Art. 8.4: solo se pueden entregar premios en dinero en las competencias organizadas para 1ra División."
-      },
-      {
-        "tipo": "vf",
-        "texto": "Un jugador puede recibir consejos de su entrenador en cualquier momento del partido.",
-        "opciones": [
-          "Verdadero",
-          "Falso"
-        ],
-        "correcta": 1,
-        "explicacion": "Art. 9.3.1: solo durante los descansos entre sets y en el tiempo muerto, y desde el lugar asignado por la organización."
-      },
-      {
-        "tipo": "palabra",
-        "texto": "Desde el 1 de marzo de 2026, ¿desde qué división las gomas tienen que estar aprobadas por la ITTF?",
-        "opciones": [
-          "Desde 6ta división y las divisiones superiores",
-          "Solo en 1ra división"
-        ],
-        "correcta": 0,
-        "explicacion": "Art. 3.1.3: «a partir de 6ta división las gomas deberán ser aprobadas por ITTF (vigencia a partir del 1 de marzo de 2026)»: rige para 6ta y las divisiones superiores (5ta, 4ta, 3ra, 2da y 1ra)."
-      },
-      {
-        "tipo": "vf",
-        "texto": "La persona que organiza el torneo puede, además, jugar la competencia.",
-        "opciones": [
-          "Verdadero",
-          "Falso"
-        ],
-        "correcta": 1,
-        "explicacion": "Art. 5.1.4: el Organizador no puede participar de la competencia ni cumplir funciones de entrenador (lo mismo vale para el Juez General, art. 5.2.5)."
+        "explicacion": "Art. 3.3.5: aproximadamente 400 lux como mínimo sobre la mesa, evitando el ingreso de luz solar directa."
       },
       {
         "tipo": "vf",
@@ -654,6 +794,16 @@
         "explicacion": "Art. 3.1.4: no se puede aplicar ningún tipo de adhesivo dentro del salón ni en los sectores cercanos a los ingresos."
       },
       {
+        "tipo": "palabra",
+        "texto": "Desde el 1 de marzo de 2026, ¿desde qué división las gomas tienen que estar aprobadas por la ITTF?",
+        "opciones": [
+          "Desde 6ta división y las divisiones superiores",
+          "Solo en 1ra división"
+        ],
+        "correcta": 0,
+        "explicacion": "Art. 3.1.3: «a partir de 6ta división las gomas deberán ser aprobadas por ITTF (vigencia a partir del 1 de marzo de 2026)»: rige para 6ta y las divisiones superiores (5ta, 4ta, 3ra, 2da y 1ra)."
+      },
+      {
         "tipo": "numero",
         "texto": "¿De cuántas estrellas tienen que ser las pelotas del torneo?",
         "opciones": [
@@ -664,54 +814,42 @@
         "explicacion": "Art. 3.2.2: de plástico, de 3 estrellas y de marca reconocida."
       },
       {
-        "tipo": "numero",
-        "texto": "¿Qué área de juego mínima corresponde a cada mesa?",
+        "tipo": "palabra",
+        "texto": "Si las paredes del salón son claras, ¿de qué color tiene que ser la pelota?",
         "opciones": [
-          "5 x 8 metros",
-          "3 x 6 metros"
+          "Naranja",
+          "Blanca"
         ],
         "correcta": 0,
-        "explicacion": "Art. 3.3.2: 5 x 8 metros para cada mesa, más el espacio de circulación."
+        "explicacion": "Art. 3.2.2: blanca si las paredes son oscuras y naranja si son claras."
+      }
+    ]
+  },
+  {
+    "id": "tmt-inscripciones",
+    "titulo": "TMT: organización e inscripciones",
+    "icono": "📝",
+    "descripcion": "Reglamento TMT ProTour: quién organiza y cómo se anotan los jugadores.",
+    "preguntas": [
+      {
+        "tipo": "vf",
+        "texto": "FeTeMBA se reserva el derecho de exclusividad para organizar los Torneos TMT ProTour.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 0,
+        "explicacion": "Art. 1.2: FeTeMBA tiene la exclusividad de la organización y además designa al organizador y a las autoridades (art. 2.4)."
       },
       {
-        "tipo": "numero",
-        "texto": "¿Qué altura mínima tiene que tener el techo en un espacio cerrado?",
+        "tipo": "vf",
+        "texto": "Un club de la Ciudad de Buenos Aires puede hacer un Torneo Regular TMT el mismo día de un Torneo ProTour.",
         "opciones": [
-          "4 metros",
-          "3 metros"
+          "Verdadero",
+          "Falso"
         ],
-        "correcta": 0,
-        "explicacion": "Art. 3.3.3: la altura mínima del techo es de 4 metros."
-      },
-      {
-        "tipo": "numero",
-        "texto": "¿Cuántos lux de iluminación, aproximadamente, se piden como mínimo sobre la mesa?",
-        "opciones": [
-          "400 lux",
-          "100 lux"
-        ],
-        "correcta": 0,
-        "explicacion": "Art. 3.3.5: aproximadamente 400 lux como mínimo sobre la mesa, evitando el ingreso de luz solar directa."
-      },
-      {
-        "tipo": "numero",
-        "texto": "¿Cuántos carteles con el número de la mesa tiene que tener cada mesa?",
-        "opciones": [
-          "2 carteles de 15 x 15 cm",
-          "4 carteles de 10 x 10 cm"
-        ],
-        "correcta": 0,
-        "explicacion": "Art. 3.3.7: 2 carteles de por lo menos 15 x 15 cm, cerca de la mesa y al menos uno visible desde la mesa de control."
-      },
-      {
-        "tipo": "numero",
-        "texto": "¿Qué altura aproximada tienen los separadores que rodean el área de juego?",
-        "opciones": [
-          "70 cm",
-          "30 cm"
-        ],
-        "correcta": 0,
-        "explicacion": "Art. 3.3.10: unos 70 cm, en por lo menos el 80% del perímetro."
+        "correcta": 1,
+        "explicacion": "Art. 2.2: no se pueden hacer torneos regulares en fechas que coinciden con un ProTour, salvo los clubes fuera de la Ciudad de Buenos Aires y el conurbano."
       },
       {
         "tipo": "numero",
@@ -765,6 +903,26 @@
       },
       {
         "tipo": "numero",
+        "texto": "¿Cuántas horas tiene una preinscripción para ser abonada (transferencia o depósito) antes de que se elimine?",
+        "opciones": [
+          "48 horas",
+          "24 horas"
+        ],
+        "correcta": 0,
+        "explicacion": "Art. 4.7: máximo 48 horas, subiendo el comprobante en el panel de control del jugador; vencido el plazo sin pago, se elimina la preinscripción."
+      },
+      {
+        "tipo": "numero",
+        "texto": "El día del torneo, ¿con cuántos minutos de anticipación hay que presentarse en la mesa de control si ya estás inscripto?",
+        "opciones": [
+          "30 minutos",
+          "10 minutos"
+        ],
+        "correcta": 0,
+        "explicacion": "Art. 4.6.3: hasta 30 minutos antes del inicio, para ser registrado e incluido en el sorteo. La inscripción presencial (si hay cupo) llega hasta 15 minutos antes."
+      },
+      {
+        "tipo": "numero",
         "texto": "¿Con cuánta anticipación se anuncia, por altavoz, el cierre de la inscripción de cada competencia?",
         "opciones": [
           "15 minutos antes",
@@ -772,6 +930,34 @@
         ],
         "correcta": 0,
         "explicacion": "Art. 4.8: 15 minutos antes del inicio se lee la lista de inscriptos y se mencionan el Organizador y el Juez General."
+      },
+      {
+        "tipo": "vf",
+        "texto": "Un jugador puede anotarse en una competencia de una división inferior a la suya.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 1,
+        "explicacion": "Art. 4.2: en ningún caso puede participar en una competencia de nivel inferior. Sí puede anotarse en divisiones superiores (4.6.2)."
+      }
+    ]
+  },
+  {
+    "id": "tmt-autoridades",
+    "titulo": "TMT: autoridades y sistema de juego",
+    "icono": "🧑‍⚖️",
+    "descripcion": "Reglamento TMT ProTour: Organizador, Juez General y grupos.",
+    "preguntas": [
+      {
+        "tipo": "vf",
+        "texto": "El jugador que oficia de contador de tantos puede resolver una discusión durante el partido.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 1,
+        "explicacion": "Art. 4.9.2: no puede resolver ninguna disputa; tiene que pedir la intervención del Juez General o de sus asistentes."
       },
       {
         "tipo": "vf",
@@ -814,6 +1000,16 @@
         "explicacion": "Art. 5.2.3: ante anomalías graves en las instalaciones o el equipamiento, puede suspender el evento en cualquier momento."
       },
       {
+        "tipo": "vf",
+        "texto": "La persona que organiza el torneo puede, además, jugar la competencia.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 1,
+        "explicacion": "Art. 5.1.4: el Organizador no puede participar de la competencia ni cumplir funciones de entrenador (lo mismo vale para el Juez General, art. 5.2.5)."
+      },
+      {
         "tipo": "numero",
         "texto": "¿De cuántos integrantes son los grupos de la primera fase?",
         "opciones": [
@@ -835,6 +1031,64 @@
       },
       {
         "tipo": "numero",
+        "texto": "¿Cuántos jugadores de cada grupo clasifican a la segunda fase?",
+        "opciones": [
+          "3 jugadores",
+          "2 jugadores"
+        ],
+        "correcta": 0,
+        "explicacion": "Art. 6.5.1: de cada grupo clasifican tres jugadores."
+      },
+      {
+        "tipo": "palabra",
+        "texto": "En la lista de clasificación de la segunda fase, ¿cómo se ordenan los segundos de cada grupo?",
+        "opciones": [
+          "Desde el último grupo hasta el primero",
+          "Desde el primer grupo hasta el último"
+        ],
+        "correcta": 0,
+        "explicacion": "Art. 6.6.1: los primeros van del grupo A al último, los segundos del último al primero y los terceros del primero al último."
+      },
+      {
+        "tipo": "vf",
+        "texto": "En la llave de eliminación se evita que se enfrenten jugadores que vienen de un mismo grupo.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 0,
+        "explicacion": "Art. 6.6.2: el sorteo los ubica evitando cruces entre jugadores de un mismo grupo."
+      }
+    ]
+  },
+  {
+    "id": "tmt-partidos-rating",
+    "titulo": "TMT: partidos, walk over y rating",
+    "icono": "⏱️",
+    "descripcion": "Reglamento TMT ProTour: cómo se juega, esperas y puntos de rating.",
+    "preguntas": [
+      {
+        "tipo": "numero",
+        "texto": "En la primera fase (grupos todos contra todos), ¿cuántos puntos se dan por partido ganado y por partido perdido?",
+        "opciones": [
+          "2 por ganado y 1 por perdido",
+          "3 por ganado y 0 por perdido"
+        ],
+        "correcta": 0,
+        "explicacion": "Art. 6.5.2: 2 puntos por partido ganado y 1 punto por partido perdido."
+      },
+      {
+        "tipo": "palabra",
+        "texto": "¿Desde qué instancia los partidos se juegan al mejor de 5 sets?",
+        "opciones": [
+          "Desde octavos de final",
+          "Solo en la final"
+        ],
+        "correcta": 0,
+        "explicacion": "Art. 6.3: hasta 16avos de final inclusive es al mejor de 3 sets; desde 8vos de final, al mejor de 5."
+      },
+      {
+        "tipo": "numero",
         "texto": "¿Cuánto dura, como máximo, el peloteo previo a un partido?",
         "opciones": [
           "2 minutos",
@@ -842,6 +1096,26 @@
         ],
         "correcta": 0,
         "explicacion": "Art. 6.7.1: máximo de 2 minutos, controlados por el contador de tantos."
+      },
+      {
+        "tipo": "numero",
+        "texto": "¿Cuántos tiempos muertos tiene derecho a pedir cada jugador durante un partido?",
+        "opciones": [
+          "1 tiempo muerto de 1 minuto",
+          "2 tiempos muertos de 1 minuto"
+        ],
+        "correcta": 0,
+        "explicacion": "Art. 6.7.3: 1 tiempo muerto de 1 minuto por partido."
+      },
+      {
+        "tipo": "numero",
+        "texto": "Si un jugador se lesiona, ¿cuánto se puede detener el partido como máximo?",
+        "opciones": [
+          "10 minutos",
+          "20 minutos"
+        ],
+        "correcta": 0,
+        "explicacion": "Art. 6.7.4: hasta 10 minutos. Si no vuelve a la mesa, se le da el partido a su oponente."
       },
       {
         "tipo": "numero",
@@ -865,13 +1139,61 @@
       },
       {
         "tipo": "numero",
-        "texto": "¿Cuántos jugadores de cada grupo clasifican a la segunda fase?",
+        "texto": "¿Con qué resultado se da por ganado un partido por ausencia (walk over)?",
         "opciones": [
-          "3 jugadores",
-          "2 jugadores"
+          "11-0 en todos los sets",
+          "11-5 en todos los sets"
         ],
         "correcta": 0,
-        "explicacion": "Art. 6.5.1: de cada grupo clasifican tres jugadores."
+        "explicacion": "Art. 6.8.1.1: después de dos llamados por altavoz, el juez general da el partido por ganado 11 a 0 en todos los sets necesarios."
+      },
+      {
+        "tipo": "vf",
+        "texto": "Quien gana un cruce en la segunda fase (llave de eliminación) suma el doble de puntos de rating que en la primera fase.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 0,
+        "explicacion": "Art. 7.2: los ganadores de los cruces de la segunda fase reciben el doble de lo indicado en la tabla de variación."
+      },
+      {
+        "tipo": "numero",
+        "texto": "Si el jugador de mayor puntaje le gana a otro con 750 puntos o más de diferencia, ¿cuántos puntos de rating suma?",
+        "opciones": [
+          "1 punto",
+          "10 puntos"
+        ],
+        "correcta": 0,
+        "explicacion": "Tabla del art. 7: ganar contra alguien con 750 o más de diferencia suma 1 punto, y si el de mayor puntaje pierde, descuenta 28."
+      },
+      {
+        "tipo": "numero",
+        "texto": "Entre dos jugadores casi parejos (diferencia de 0 a 24 puntos), ¿cuántos puntos de rating gana el ganador?",
+        "opciones": [
+          "10 puntos",
+          "5 puntos"
+        ],
+        "correcta": 0,
+        "explicacion": "Tabla del art. 7: con una diferencia de 0 a 24 puntos, el ganador suma 10 y el perdedor resta 10 (el doble en la llave de eliminación)."
+      }
+    ]
+  },
+  {
+    "id": "tmt-premios-disciplina",
+    "titulo": "TMT: premios, disciplina y convivencia",
+    "icono": "🏆",
+    "descripcion": "Reglamento TMT ProTour: premios, tarjetas, consejos y normas de convivencia.",
+    "preguntas": [
+      {
+        "tipo": "vf",
+        "texto": "En un torneo se pueden entregar premios en dinero en cualquier división.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 1,
+        "explicacion": "Art. 8.4: solo se pueden entregar premios en dinero en las competencias organizadas para 1ra División."
       },
       {
         "tipo": "numero",
@@ -884,14 +1206,14 @@
         "explicacion": "Art. 8.1: a los 4 primeros puestos, considerando a los 2 eliminados en semifinales como terceros."
       },
       {
-        "tipo": "numero",
-        "texto": "Entre dos jugadores casi parejos (diferencia de 0 a 24 puntos), ¿cuántos puntos de rating gana el ganador?",
+        "tipo": "vf",
+        "texto": "Un jugador puede recibir consejos de su entrenador en cualquier momento del partido.",
         "opciones": [
-          "10 puntos",
-          "5 puntos"
+          "Verdadero",
+          "Falso"
         ],
-        "correcta": 0,
-        "explicacion": "Tabla del art. 7: con una diferencia de 0 a 24 puntos, el ganador suma 10 y el perdedor resta 10 (el doble en la llave de eliminación)."
+        "correcta": 1,
+        "explicacion": "Art. 9.3.1: solo durante los descansos entre sets y en el tiempo muerto, y desde el lugar asignado por la organización."
       },
       {
         "tipo": "numero",
@@ -922,6 +1244,56 @@
         ],
         "correcta": 1,
         "explicacion": "Art. 10.4: no se permite el consumo de bebidas alcohólicas dentro del salón. Tampoco se puede fumar (10.3)."
+      },
+      {
+        "tipo": "vf",
+        "texto": "Los trofeos y medallas tienen que incluir la sigla TMT y el puesto.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 0,
+        "explicacion": "Art. 8.2: nombre y fecha del torneo, categoría, la sigla TMT y el puesto al que corresponde."
+      },
+      {
+        "tipo": "vf",
+        "texto": "Romper deliberadamente la pelota o golpearla fuera del área de juego es mal comportamiento.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 0,
+        "explicacion": "Art. 9.1.1: también lo son los gritos desmedidos, maltratar la mesa o los separadores y faltar el respeto a cualquier persona."
+      },
+      {
+        "tipo": "vf",
+        "texto": "Mientras un jugador oficia de contador de tantos, puede dar consejos a otro jugador.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 1,
+        "explicacion": "Art. 9.3.2: no puede aconsejar a ningún otro jugador ni demostrar parcialidad."
+      },
+      {
+        "tipo": "vf",
+        "texto": "Se puede pasar música a bajo volumen mientras no se disputan partidos.",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 0,
+        "explicacion": "Art. 10.2: la música es válida a bajo volumen y solo cuando no hay partidos en juego."
+      },
+      {
+        "tipo": "vf",
+        "texto": "En el salón de juego hay que exhibir carteles con la consigna «GRACIAS POR NO FUMAR».",
+        "opciones": [
+          "Verdadero",
+          "Falso"
+        ],
+        "correcta": 0,
+        "explicacion": "Art. 10.3: no se permite fumar dentro del salón y hay que mostrar esos carteles."
       }
     ]
   }

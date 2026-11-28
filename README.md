@@ -134,24 +134,24 @@ foto de esa época, aparece "Ya no están en el club".
 
 ## Trivias (Mi Club → Trivia)
 
-Cada trivia es un **banco de preguntas** (hoy 44 de reglas generales y 47 del Reglamento TMT ProTour). En cada partida se juega una **versión**: 11 preguntas del banco;
-hay **11 versiones distintas** por trivia y al tocar "Jugar otra versión" se pasa a otra (no se repite una hasta haber jugado las 11). Las versiones se arman solas, siempre
-igual para la misma trivia: cada pregunta aparece 2 o 3 veces y dos versiones comparten como mucho 5 preguntas. Al final se ve el puntaje (x/11), una marca por pregunta y el repaso de lo que se falló.
+Un **recorrido de 11 trivias** de 11 preguntas cada una (reglas generales del tenis de mesa y Reglamento TMT ProTour de enero 2026). En la página se ven las trivias
+como casillas numeradas: solo la primera está abierta y **completar una (con cualquier puntaje) desbloquea la siguiente**. Cada pregunta vale una **pelotita**; quien contesta bien
+las 11 de una trivia gana una **paleta**, que queda como insignia. La página muestra el avance (pelotitas ganadas, trivias completadas, paletas) y la colección de insignias; se puede
+repetir cualquier trivia para mejorar el puntaje o ganar la paleta. El avance se guarda solo en el dispositivo (hay un botón "Borrar mi avance").
 
-Las trivias se escriben en `config/trivias.json` (para todos los clubes) y, si hace falta, en `clubes/<slug>/trivias.json` (solo de ese club; con el mismo `id`
-pisa a la general). Para sumar una trivia, agregar un objeto a la lista y listo: aparece sola en la página. Para sumar preguntas a una existente, agregarlas a su `preguntas`.
+Las trivias se escriben en `config/trivias.json` (para todos los clubes) y, si hace falta, en `clubes/<slug>/trivias.json` (se suman al final del recorrido; con el mismo `id` que una general la
+reemplazan en su lugar). El **orden de la lista es el orden de desbloqueo**. Para sumar una trivia, agregar un objeto a la lista y listo:
 
 ```json
-{"id": "saque", "titulo": "El saque", "icono": "🏓", "descripcion": "Texto corto para la tarjeta.",
+{"id": "saque", "titulo": "El saque", "icono": "🏓", "descripcion": "Texto corto para la casilla.",
  "preguntas": [
    {"tipo": "vf", "texto": "¿Verdadero o falso?...", "opciones": ["Verdadero", "Falso"], "correcta": 0, "explicacion": "Por qué (opcional)."},
    {"tipo": "numero", "texto": "¿Cuánto...?", "opciones": ["16 cm", "30 cm"], "correcta": 0}
  ]}
 ```
 `tipo` (`vf`, `numero`, `palabra`) solo orienta el estilo: en `vf` las opciones no se mezclan; en las demás se mezclan cada vez. Cada pregunta lleva de 2 a 4 opciones y
-`correcta` es la posición de la correcta (0 = la primera). El banco necesita al menos 11 preguntas; opcionalmente `"por_version"` (preguntas por partida, 11 por defecto) y
-`"versiones"` (cuántas versiones, 11 por defecto). Se valida al armar el sitio y en cada pull request (`python scripts/trivias.py` para probar y ver el reparto). Cada persona
-ve su mejor puntaje y las versiones que ya jugó en su propio dispositivo.
+`correcta` es la posición de la correcta (0 = la primera). Una trivia puede tener la cantidad de preguntas que se quiera (la paleta se gana con todas bien). Se valida al armar el sitio y en
+cada pull request (`python scripts/trivias.py` para probar y ver el recorrido).
 
 ## Vista previa al compartir (WhatsApp, Telegram…)
 

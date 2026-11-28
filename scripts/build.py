@@ -406,19 +406,22 @@ def horarios_sedes(cfg):
 
 def seguinos(cfg):
     """Opciones del final del menú Mi Club: 'Seguinos' (Instagram del club, se omite si no tiene) y, debajo,
-    los enlaces extra del club (club.json -> menu_enlaces: [{"texto": ..., "url": "https://..."}])."""
+    los enlaces extra del club (club.json -> menu_enlaces: [{"texto": ..., "url": "https://...", "icono": "🇦🇷"}]; el icono es opcional, por defecto 🔗)."""
     links = []
     if cfg.get("instagram"):
-        links.append(("Seguinos", cfg["instagram"]))
+        links.append(("Seguinos", cfg["instagram"], "📸"))
     for e in cfg.get("menu_enlaces") or []:
         if not isinstance(e, dict) or not e.get("texto") or not e.get("url"):
             raise SystemExit(f"{cfg['slug']}: cada menu_enlaces necesita texto y url (es {e!r})")
-        links.append((e["texto"], e["url"]))
+        icono = e.get("icono") or "🔗"
+        if not isinstance(icono, str) or len(icono) > 8:
+            raise SystemExit(f"{cfg['slug']}: el icono de '{e['texto']}' tiene que ser un emoji (es {icono!r})")
+        links.append((e["texto"], e["url"], icono))
     out = []
-    for texto, url in links:
+    for texto, url, icono in links:
         if not re.match(r"^https://[^\s\"'<>]+$", url):
             raise SystemExit(f"{cfg['slug']}: el enlace '{texto}' debe empezar con https:// y no tener espacios (es {url!r})")
-        out.append(f'<a href="{html.escape(url, quote=True)}" target="_blank" rel="noopener">{html.escape(texto)}</a>')
+        out.append(f'<a href="{html.escape(url, quote=True)}" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">{html.escape(icono)}</span>{html.escape(texto)}</a>')
     return "\n            ".join(out)
 
 

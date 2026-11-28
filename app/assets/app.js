@@ -988,77 +988,107 @@
     sync(); draw();
   }
 
-  // ---------- Trivia: una pregunta por vez; se responde, se ve si estuvo bien y se pasa a la siguiente
+  // ---------- Trivia: recorrido de trivias. Cada pregunta vale una "pelotita"; contestar bien las 11 de una trivia gana una "paleta" (insignia);
+  // completar una trivia desbloquea la siguiente. El avance se guarda solo en este dispositivo.
+  const pelotita = (est) => `<span class="pel pel-${est}"></span>`;
   async function viewTrivia(id) {
     $app.innerHTML = `<div class="loading">Cargando trivias…</div>`;
     let T;
     try { T = await getJSON("data/trivias.json"); } catch (e) { $app.innerHTML = `<div class="section"><h1>🧠 Trivia</h1><p class="muted">Todavía no hay trivias.</p></div>`; return; }
-    const clave = (tid) => `${K().slug}.trivia.${tid}`;
-    const trivia = T.find((t) => t.id === id);
-    if (!trivia) {   // lista de trivias
+    const KP = `${K().slug}.trivia`;
+    const leer = () => { const g = store.get(KP, {}); return g && typeof g === "object" && !Array.isArray(g) ? g : {}; };
+    const completa = (t, g) => !!(g[t.id] && g[t.id].intentos > 0);
+    const abierta = (k, g) => k === 0 || completa(T[k - 1], g);   // la primera siempre; las demás cuando se completó la anterior
+    const idx = T.findIndex((t) => t.id === id);
+    const g0 = leer();
+
+    // ---- recorrido (lista de casillas + avance + insignias)
+    if (idx < 0 || !abierta(idx, g0)) {
+      const g = g0, totalPreg = T.reduce((a, t) => a + t.preguntas.length, 0);
+      const gan = T.reduce((a, t) => a + (g[t.id] ? g[t.id].mejor || 0 : 0), 0), hechas = T.filter((t) => completa(t, g)).length, paletas = T.filter((t) => g[t.id] && g[t.id].paleta).length;
+      const sig = T.findIndex((t, k) => abierta(k, g) && !completa(t, g));
+      const pct = Math.round((gan / Math.max(totalPreg, 1)) * 100);
+      const casilla = (t, k) => {
+        const r = g[t.id] || {}, ab = abierta(k, g), n = t.preguntas.length, mj = r.mejor || 0;
+        const bolas = Array.from({ length: n }, (_, q) => pelotita(completa(t, g) ? (q < mj ? "ok" : "pend") : "pend")).join("");
+        const estado = !ab ? `<span class="triv-est lock">🔒 Se desbloquea al completar la trivia ${k}</span>`
+          : completa(t, g) ? `<span class="triv-est ${r.paleta ? "oro" : "ok"}">${r.paleta ? "🏓 ¡Paleta ganada!" : `Completada · ${mj}/${n}`}</span>`
+          : `<span class="triv-est ya">▶ ${k === sig ? "¡Te toca!" : "Jugar"}</span>`;
+        const cuerpo = `<span class="triv-num">${k + 1}</span><div class="triv-ic">${ab ? esc(t.icono || "🧠") : "🔒"}</div>
+          <div class="triv-info"><h3>${esc(t.titulo)}</h3><p class="small muted">${esc(t.descripcion || "")}</p><div class="pels" aria-label="${mj} de ${n} pelotitas">${bolas}</div>${estado}</div>`;
+        return ab ? `<a class="triv-casilla ${k === sig ? "sig" : ""} ${r.paleta ? "paleta" : ""}" href="#/trivia/${esc(t.id)}">${cuerpo}</a>`
+          : `<div class="triv-casilla lock" aria-disabled="true">${cuerpo}</div>`;
+      };
       $app.innerHTML = `<div class="section"><h1>🧠 Trivia</h1>
-        <p class="muted" style="max-width:640px">Jugá y aprendé. Respondé una pregunta, mirá si acertaste y pasá a la siguiente.</p>
-        <div class="grid g2 section">${T.map((t) => { const g = store.get(clave(t.id), null);
-          return `<a class="card triv-card" href="#/trivia/${esc(t.id)}"><div class="triv-ic">${esc(t.icono || "🧠")}</div><div><h3 style="margin:0">${esc(t.titulo)}</h3>
-            <p class="small muted" style="margin:4px 0 8px">${esc(t.descripcion || "")}</p>
-            <span class="badge">${(t.versiones || []).length ? t.por_version : t.preguntas.length} preguntas por partida</span> ${(t.versiones || []).length > 1 ? `<span class="badge">${t.versiones.length} versiones</span>` : ""}${g ? ` <span class="badge ok">Tu mejor: ${g.mejor}/${g.de || t.por_version || t.preguntas.length}</span>` : ""}</div></a>`; }).join("")}</div></div>`;
+        <p class="muted" style="max-width:680px">Un recorrido de ${T.length} trivias sobre las reglas del tenis de mesa. Cada pregunta vale una <b>pelotita</b>; si contestás bien las ${T[0].preguntas.length} de una trivia, ganás una <b>paleta</b> para tus insignias. Al completar una trivia se desbloquea la siguiente.</p>
+        ${idx >= 0 ? `<div class="note">🔒 Esa trivia todavía está bloqueada: primero completá la anterior.</div>` : ""}
+        <div class="card section triv-avance"><h3 style="margin:0 0 10px">Tu avance</h3>
+          <div class="grid tiles">${tile(`${gan}<span class="small muted">/${totalPreg}</span>`, "Pelotitas ganadas")}${tile(`${hechas}<span class="small muted">/${T.length}</span>`, "Trivias completadas")}${tile(`${paletas}<span class="small muted">/${T.length}</span>`, "Paletas (insignias)")}</div>
+          <div class="bar" style="margin-top:12px"><span style="width:${pct}%;background:var(--celeste)"></span><span style="width:${100 - pct}%;background:var(--linea)"></span></div>
+          <h4 style="margin:16px 0 8px">Mis insignias</h4>
+          <div class="insignias">${T.map((t, k) => { const ok = g[t.id] && g[t.id].paleta; return `<span class="insig ${ok ? "on" : ""}" title="${esc(t.titulo)}${ok ? " · ¡paleta ganada!" : " · todavía sin paleta"}"><i>🏓</i><b>${k + 1}</b></span>`; }).join("")}</div>
+          ${paletas === T.length ? `<p style="margin:12px 0 0"><b>🏆 ¡Completaste todo el recorrido con paleta en cada trivia! Sos un crack del reglamento.</b></p>` : sig >= 0 ? `<p class="small muted" style="margin:12px 0 0">Siguiente: <b>${sig + 1}. ${esc(T[sig].titulo)}</b></p>` : `<p class="small muted" style="margin:12px 0 0">Completaste todas las trivias: repetí las que no tienen paleta para ganarla.</p>`}</div>
+        <div class="triv-tablero">${T.map(casilla).join("")}</div>
+        ${hechas ? `<p class="small muted" style="margin-top:14px">Tu avance se guarda solo en este celular o computadora. <button class="linkbtn" id="trBorrar" type="button">Borrar mi avance</button></p>` : ""}</div>`;
+      const bb = document.getElementById("trBorrar");
+      bb && bb.addEventListener("click", () => { if (confirm("¿Borrar todo tu avance en las trivias (pelotitas, paletas e insignias)?")) { store.set(KP, {}); viewTrivia(""); } });
       return;
     }
-    // cada trivia es un banco de preguntas con varias versiones (conjuntos de 11); al volver a empezar se pasa a otra y no se repite
-    // una hasta haber jugado todas (lo ya jugado se recuerda en este dispositivo)
-    const versiones = (trivia.versiones && trivia.versiones.length) ? trivia.versiones : [trivia.preguntas.map((_, k) => k)];
-    const elegirVersion = () => {
-      const g = store.get(clave(id), null) || {};
-      let vistas = Array.isArray(g.vistas) ? g.vistas.filter((k) => k < versiones.length) : [];
-      let libres = versiones.map((_, k) => k).filter((k) => !vistas.includes(k));
-      if (!libres.length) { vistas = []; libres = versiones.map((_, k) => k).filter((k) => versiones.length === 1 || k !== g.ult); }
-      const k = libres[Math.floor(Math.random() * libres.length)];
-      store.set(clave(id), { ...g, vistas: [...vistas, k], ult: k });
-      return k;
-    };
-    let verIdx = elegirVersion(), preg = versiones[verIdx].map((k) => trivia.preguntas[k]), total = preg.length;
+
+    // ---- una trivia: una pregunta por vez
+    const trivia = T[idx], preg = trivia.preguntas, total = preg.length;
     const est = { i: 0, aciertos: 0, fallos: [], resp: null, res: [] };
     // las opciones se mezclan cada vez (salvo verdadero/falso), así la correcta no queda siempre en el mismo lugar
-    const preparar = (q) => { const idx = q.opciones.map((_, k) => k); if (q.tipo !== "vf") for (let k = idx.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [idx[k], idx[j]] = [idx[j], idx[k]]; } return idx; };
+    const preparar = (q) => { const o = q.opciones.map((_, k) => k); if (q.tipo !== "vf") for (let k = o.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [o[k], o[j]] = [o[j], o[k]]; } return o; };
     let orden = preparar(preg[0]);
+    const bolas = () => Array.from({ length: total }, (_, q) => pelotita(q < est.res.length ? (est.res[q] ? "ok" : "mal") : q === est.res.length ? "act" : "pend")).join("");
     const pantalla = () => {
       if (est.i >= total) return final();
-      const q = preg[est.i], pct = Math.round((est.i / total) * 100);
-      $app.innerHTML = `<div class="section triv"><a href="#/trivia" class="small">← Trivias</a>
-        <h1 style="margin:8px 0 4px">${esc(trivia.icono || "🧠")} ${esc(trivia.titulo)}</h1>
-        <div class="triv-prog"><span class="small muted">Pregunta <b>${est.i + 1}</b> de ${total}${versiones.length > 1 ? ` · versión ${verIdx + 1} de ${versiones.length}` : ""}</span><span class="small muted">✔ ${est.aciertos}</span></div>
-        <div class="bar triv-bar"><span style="width:${pct}%;background:var(--celeste)"></span><span style="width:${100 - pct}%;background:var(--linea)"></span></div>
+      const q = preg[est.i];
+      $app.innerHTML = `<div class="section triv"><a href="#/trivia" class="small">← Recorrido</a>
+        <h1 style="margin:8px 0 4px">${esc(trivia.icono || "🧠")} ${idx + 1}. ${esc(trivia.titulo)}</h1>
+        <div class="triv-prog"><span class="small muted">Pregunta <b>${est.i + 1}</b> de ${total}</span><span class="small muted">Pelotitas: <b>${est.aciertos}</b></span></div>
+        <div class="pels grande" id="trPel" aria-label="Pelotitas">${bolas()}</div>
         <div class="card triv-q"><p class="triv-texto">${esc(q.texto)}</p>
           <div class="triv-ops ${q.tipo === "vf" ? "vf" : ""}" id="trOps">${orden.map((k, n) => `<button class="triv-op" data-k="${k}" type="button"><span class="triv-n">${n + 1}</span>${esc(q.opciones[k])}</button>`).join("")}</div>
           <div id="trRes" aria-live="polite"></div></div></div>`;
       document.getElementById("trOps").addEventListener("click", (e) => { const b = e.target.closest(".triv-op"); if (b && est.resp == null) responder(+b.dataset.k); });
     };
     const responder = (k) => {
-      const q = preg[est.i], ok = k === q.correcta; est.resp = k;
-      est.res.push(ok);
+      const q = preg[est.i], ok = k === q.correcta; est.resp = k; est.res.push(ok);
       if (ok) est.aciertos++; else est.fallos.push({ q, k });
       document.querySelectorAll(".triv-op").forEach((b) => { const bk = +b.dataset.k; b.disabled = true; b.classList.toggle("ok", bk === q.correcta); b.classList.toggle("mal", bk === k && !ok); });
+      document.getElementById("trPel").innerHTML = bolas();
+      document.querySelector(".triv-prog span:last-child").innerHTML = `Pelotitas: <b>${est.aciertos}</b>`;
       const ult = est.i === total - 1;
-      document.getElementById("trRes").innerHTML = `<div class="triv-fb ${ok ? "ok" : "mal"}"><b>${ok ? "✅ ¡Correcto!" : "❌ Casi…"}</b>${ok ? "" : ` La respuesta era <b>${esc(q.opciones[q.correcta])}</b>.`}${q.explicacion ? `<p style="margin:6px 0 0">${esc(q.explicacion)}</p>` : ""}</div>
+      document.getElementById("trRes").innerHTML = `<div class="triv-fb ${ok ? "ok" : "mal"}"><b>${ok ? "✅ ¡Correcto! +1 pelotita" : "❌ Casi…"}</b>${ok ? "" : ` La respuesta era <b>${esc(q.opciones[q.correcta])}</b>.`}${q.explicacion ? `<p style="margin:6px 0 0">${esc(q.explicacion)}</p>` : ""}</div>
         <p style="margin:12px 0 0"><button class="btn" id="trSig" type="button">${ult ? "Ver mi resultado" : "Siguiente →"}</button></p>`;
       const sig = document.getElementById("trSig"); sig.focus({ preventScroll: true }); sig.scrollIntoView({ block: "nearest", behavior: "smooth" });
       sig.addEventListener("click", () => { est.i++; est.resp = null; if (est.i < total) orden = preparar(preg[est.i]); pantalla(); window.scrollTo(0, 0); });
     };
     const final = () => {
-      const p = Math.round((est.aciertos / total) * 100);
-      const ant = store.get(clave(id), null), mejorAnt = ant && ant.mejor != null ? ant.mejor : null, mejor = Math.max(est.aciertos, mejorAnt ?? 0);
-      store.set(clave(id), { ...(store.get(clave(id), null) || {}), mejor, ultima: est.aciertos, de: total, fecha: hoyAR() });
-      const msg = p === 100 ? "🏆 ¡Perfecto! Sos un árbitro." : p >= 75 ? "👏 ¡Muy bien!" : p >= 50 ? "👍 Bien, con un repasito se mejora." : "💪 A seguir practicando.";
-      $app.innerHTML = `<div class="section triv"><a href="#/trivia" class="small">← Trivias</a>
-        <h1 style="margin:8px 0">Resultado</h1>
-        <div class="card triv-q" style="text-align:center"><div class="triv-score">${est.aciertos}<span>/${total}</span></div><p style="font-size:18px;margin:4px 0 2px">${msg}</p>
-          <div class="triv-dots" aria-label="Tus respuestas">${est.res.map((ok, k) => `<span class="${ok ? "ok" : "mal"}" title="Pregunta ${k + 1}: ${ok ? "correcta" : "incorrecta"}">${ok ? "✔" : "✘"}</span>`).join("")}</div>
-          <p class="small muted">${est.aciertos} correctas y ${total - est.aciertos} incorrectas · ${p}% de aciertos${versiones.length > 1 ? ` · versión ${verIdx + 1} de ${versiones.length}` : ""}<br>${mejorAnt != null && est.aciertos > mejorAnt ? "¡Nuevo récord!" : `Tu mejor puntaje: ${mejor}/${total}`}</p>
-          <p style="margin:14px 0 0"><button class="btn" id="trRep" type="button">${versiones.length > 1 ? "Jugar otra versión" : "Jugar de nuevo"}</button> <a class="btn ghost" href="#/trivia">Otras trivias</a> <button class="btn ghost" id="trShare" type="button">Compartir</button> <span class="small muted" id="trMsg"></span></p></div>
+      const g = leer(), ant = g[trivia.id] || {}, perfecto = est.aciertos === total, primeraPaleta = perfecto && !ant.paleta, primeraVez = !(ant.intentos > 0);
+      g[trivia.id] = { mejor: Math.max(est.aciertos, ant.mejor || 0), ultima: est.aciertos, de: total, intentos: (ant.intentos || 0) + 1, paleta: !!(ant.paleta || perfecto), fecha: hoyAR() };
+      store.set(KP, g);
+      const sigT = T[idx + 1], desbloquea = primeraVez && sigT;
+      const todas = T.every((t) => g[t.id] && g[t.id].paleta);
+      const msg = perfecto ? "¡Perfecto! Contestaste bien todas." : est.aciertos >= total * 0.75 ? "👏 ¡Muy bien! Te faltó poco para la paleta." : est.aciertos >= total / 2 ? "👍 Bien, con un repasito sale la paleta." : "💪 A seguir practicando: repasá y volvé a probar.";
+      $app.innerHTML = `<div class="section triv"><a href="#/trivia" class="small">← Recorrido</a>
+        <h1 style="margin:8px 0">Resultado · ${esc(trivia.titulo)}</h1>
+        <div class="card triv-q" style="text-align:center">
+          ${perfecto ? `<div class="triv-paleta" aria-hidden="true">🏓</div><h2 style="margin:4px 0 2px">${primeraPaleta ? "¡Ganaste una paleta!" : "¡Paleta de nuevo!"}</h2><p class="muted" style="margin:0 0 8px">${primeraPaleta ? "Se sumó a tus insignias." : "Ya la tenías en tus insignias."}</p>` : ""}
+          <div class="triv-score">${est.aciertos}<span>/${total}</span></div><p class="small muted" style="margin:0">pelotitas</p>
+          <div class="pels grande centro" aria-label="Tus respuestas">${est.res.map((ok) => pelotita(ok ? "ok" : "mal")).join("")}</div>
+          <p style="font-size:17px;margin:8px 0 2px">${msg}</p>
+          <p class="small muted">${est.aciertos} correctas y ${total - est.aciertos} incorrectas · ${Math.round((est.aciertos / total) * 100)}% de aciertos${ant.intentos > 0 && est.aciertos > (ant.mejor || 0) ? " · ¡nuevo récord!" : ` · tu mejor: ${g[trivia.id].mejor}/${total}`}</p>
+          ${desbloquea ? `<div class="triv-fb ok" style="text-align:left"><b>🔓 Se desbloqueó la trivia ${idx + 2}:</b> ${esc(sigT.icono || "")} ${esc(sigT.titulo)}</div>` : ""}
+          ${todas ? `<div class="triv-fb ok" style="text-align:left"><b>🏆 ¡Tenés la paleta de las ${T.length} trivias!</b> Completaste todo el recorrido.</div>` : ""}
+          <p style="margin:14px 0 0">${sigT ? `<a class="btn" href="#/trivia/${esc(sigT.id)}">Siguiente trivia →</a> ` : ""}<button class="btn ${sigT ? "ghost" : ""}" id="trRep" type="button">${perfecto ? "Jugar de nuevo" : "Reintentar"}</button> <a class="btn ghost" href="#/trivia">Ver recorrido</a> <button class="btn ghost" id="trShare" type="button">Compartir</button> <span class="small muted" id="trMsg"></span></p></div>
         ${est.fallos.length ? `<div class="card section"><h3>Para repasar (${est.fallos.length})</h3>${est.fallos.map(({ q, k }) => `<div class="triv-rev"><b>${esc(q.texto)}</b><div class="small"><span class="down">Respondiste: ${esc(q.opciones[k])}</span> · <span class="up">Correcta: ${esc(q.opciones[q.correcta])}</span></div>${q.explicacion ? `<div class="small muted">${esc(q.explicacion)}</div>` : ""}</div>`).join("")}</div>` : ""}</div>`;
-      document.getElementById("trRep").addEventListener("click", () => { est.i = 0; est.aciertos = 0; est.fallos = []; est.resp = null; est.res = []; verIdx = elegirVersion(); preg = versiones[verIdx].map((k) => trivia.preguntas[k]); total = preg.length; orden = preparar(preg[0]); pantalla(); window.scrollTo(0, 0); });
+      document.getElementById("trRep").addEventListener("click", () => { est.i = 0; est.aciertos = 0; est.fallos = []; est.resp = null; est.res = []; orden = preparar(preg[0]); pantalla(); window.scrollTo(0, 0); });
       document.getElementById("trShare").addEventListener("click", async () => {
-        const texto = `Saqué ${est.aciertos}/${total} en la trivia «${trivia.titulo}» de ${K().corto}. ¿Te animás?`, url = location.href.split("#")[0] + "#/trivia/" + id, m = document.getElementById("trMsg");
+        const texto = perfecto ? `¡Gané la paleta 🏓 de «${trivia.titulo}» en la trivia de ${K().corto}! 11 de 11 pelotitas.` : `Saqué ${est.aciertos}/${total} pelotitas en «${trivia.titulo}» de la trivia de ${K().corto}. ¿Te animás?`;
+        const url = location.href.split("#")[0] + "#/trivia", m = document.getElementById("trMsg");
         try { if (navigator.share) { await navigator.share({ title: trivia.titulo, text: texto, url }); return; } await navigator.clipboard.writeText(`${texto} ${url}`); m.textContent = "¡Copiado!"; } catch (e) { m.textContent = ""; }
       });
     };

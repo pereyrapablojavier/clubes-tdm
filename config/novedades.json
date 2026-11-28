@@ -3,8 +3,8 @@
   "id": 10,
   "fecha": "2026-11-28",
   "icono": "🧠",
-  "titulo": "Nueva sección: Trivia",
-  "detalle": "En Mi Club > Trivia podés jugar y aprender: reglas del tenis de mesa y Reglamento TMT ProTour. Cada partida tiene 11 preguntas (verdadero o falso, números y palabras) y hay 11 versiones distintas de cada trivia: al volver a jugar cambian las preguntas. Al final ves tu puntaje y repasás lo que fallaste."
+  "titulo": "Nueva sección: Trivia con pelotitas y paletas",
+  "detalle": "En Mi Club > Trivia hay un recorrido de 11 trivias sobre las reglas del tenis de mesa y el Reglamento TMT ProTour. Cada pregunta vale una pelotita; si contestás bien las 11 de una trivia ganás una paleta para tus insignias, y al completar una se desbloquea la siguiente. Ves tu avance en la misma página."
  },
  {
   "id": 9,

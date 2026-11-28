@@ -3,15 +3,12 @@
 Cada trivia:  {"id": "reglas", "titulo": "...", "icono": "📏", "descripcion": "...", "preguntas": [ ... ]}
 Cada pregunta: {"tipo": "vf" | "numero" | "palabra" (solo orienta el estilo), "texto": "...", "opciones": ["A", "B"],   (2 a 4 opciones)
                 "correcta": 0 (posición de la opción correcta, empezando en 0), "explicacion": "..." (opcional)}
-Cada trivia es un BANCO de preguntas; en cada partida se juega una "versión": un conjunto de 11 preguntas (campo opcional "por_version") tomado del banco.
-Se arman 11 versiones distintas (campo opcional "versiones") de manera pareja: cada pregunta aparece casi la misma cantidad de veces y dos versiones se parecen lo menos posible.
-En el sitio, al volver a empezar se pasa a otra versión (no se repite una hasta haber jugado todas).
-Si un club define una trivia con el mismo id que la general, usa la del club.
+Las trivias forman un RECORRIDO: se juegan en el orden de la lista y completar una desbloquea la siguiente. Cada pregunta vale una "pelotita"
+y quien contesta bien todas las de una trivia gana una "paleta" (insignia). Hoy hay 11 trivias de 11 preguntas, pero cada trivia puede tener la cantidad que haga falta.
+Las trivias de un club se suman al final del recorrido (y una con el mismo id que una general la reemplaza en su lugar).
 Se valida al armar el sitio y en la verificación de cada PR.  Uso:  python scripts/trivias.py   # valida todo
 """
-import hashlib
 import json
-import random
 import re
 import sys
 from pathlib import Path
@@ -21,34 +18,6 @@ import clubcfg
 ROOT = Path(__file__).resolve().parent.parent
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 TIPOS = {"vf", "numero", "palabra", "otro"}
-POR_VERSION = 11   # preguntas de cada partida
-VERSIONES = 11     # versiones distintas de cada trivia
-
-
-def armar_versiones(cantidad, por_version, versiones, semilla):
-    """Reparte el banco (posiciones 0..cantidad-1) en 'versiones' conjuntos de 'por_version' preguntas, siempre igual para la misma trivia.
-    Cada vez se eligen las preguntas menos usadas hasta el momento (así todas aparecen casi la misma cantidad de veces) y se evita que dos versiones
-    compartan más de la mitad de sus preguntas. Devuelve [[posiciones en el orden en que se muestran], ...]."""
-    rng = random.Random(int(hashlib.sha256(semilla.encode()).hexdigest()[:12], 16))
-    if cantidad <= por_version:
-        versiones = 1
-    usos, out = [0] * cantidad, []
-    for _ in range(versiones):
-        mejor = None
-        for _intento in range(60):
-            orden = sorted(range(cantidad), key=lambda i: (usos[i], rng.random()))
-            elegidas = orden[:por_version]
-            comun = max((len(set(elegidas) & set(v)) for v in out), default=0)
-            if mejor is None or comun < mejor[0]:
-                mejor = (comun, elegidas)
-            if comun <= por_version // 2:
-                break
-        for i in mejor[1]:
-            usos[i] += 1
-        v = list(mejor[1])
-        rng.shuffle(v)
-        out.append(v)
-    return out
 
 
 def validar(trivias, origen):
@@ -73,13 +42,6 @@ def validar(trivias, origen):
         if not isinstance(pregs, list) or not pregs:
             errores.append(f"{donde}: necesita al menos una pregunta")
             continue
-        for campo in ("por_version", "versiones"):
-            if campo in t and (not isinstance(t[campo], int) or isinstance(t[campo], bool) or t[campo] < 1):
-                errores.append(f"{donde}: '{campo}' tiene que ser un número entero mayor que 0")
-        if isinstance(t.get("por_version"), int) and t["por_version"] > len(pregs):
-            errores.append(f"{donde}: pide {t['por_version']} preguntas por versión pero el banco tiene solo {len(pregs)}")
-        elif "por_version" not in t and len(pregs) < POR_VERSION:
-            errores.append(f"{donde}: el banco tiene {len(pregs)} preguntas y hacen falta al menos {POR_VERSION} (o indicá 'por_version')")
         for k, q in enumerate(pregs, 1):
             d = f"{donde} ('{t.get('id')}'), pregunta {k}"
             if not isinstance(q, dict) or not q.get("texto"):
@@ -114,12 +76,7 @@ def cargar(slug=None):
             for t in data:
                 if isinstance(t, dict) and t.get("id"):
                     out[t["id"]] = t
-    res = []
-    for t in out.values():
-        if not problemas and isinstance(t.get("preguntas"), list):
-            por = t.get("por_version", POR_VERSION)
-            t = {**t, "por_version": por, "versiones": armar_versiones(len(t["preguntas"]), por, t.get("versiones", VERSIONES), t["id"])}
-        res.append(t)
+    res = list(out.values())
     return res, problemas
 
 
@@ -131,9 +88,8 @@ if __name__ == "__main__":
     if malos:
         print("FALLÓ:\n- " + "\n- ".join(dict.fromkeys(malos)))
         sys.exit(1)
-    for t in cargar()[0]:
-        v = t["versiones"]
-        usos = [sum(i in x for x in v) for i in range(len(t["preguntas"]))]
-        comunes = [len(set(a) & set(b)) for k, a in enumerate(v) for b in v[k + 1:]]
-        print(f"ok trivia '{t['id']}': banco de {len(t['preguntas'])} preguntas → {len(v)} versiones de {t['por_version']}; "
-              f"cada pregunta sale {min(usos)} a {max(usos)} veces; dos versiones comparten como mucho {max(comunes or [0])} preguntas")
+    ts = cargar()[0]
+    preg = [q["texto"] for t in ts for q in t["preguntas"]]
+    print(f"ok: {len(ts)} trivias, {len(preg)} preguntas ({len(preg) - len(set(preg))} repetidas)")
+    for k, t in enumerate(ts, 1):
+        print(f"  {k:>2}. {t['icono']} {t['titulo']} · {len(t['preguntas'])} preguntas")

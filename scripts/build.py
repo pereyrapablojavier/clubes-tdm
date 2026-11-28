@@ -19,6 +19,7 @@ from pathlib import Path
 
 import clubcfg
 import mantenimiento
+import trivias as trivias_mod
 
 ROOT = Path(__file__).resolve().parent.parent
 APP = ROOT / "app"
@@ -285,6 +286,11 @@ def build():
         (OUT / "data" / "equipos.json").write_text(json.dumps(equipos, ensure_ascii=False, separators=(",", ":")))
     if circuito:
         (OUT / "data" / "circuito.json").write_text(json.dumps(circuito, ensure_ascii=False, separators=(",", ":")))
+    trivias_club, problemas = trivias_mod.cargar(CFG["slug"])
+    if problemas:
+        raise SystemExit("Trivias inválidas:\n- " + "\n- ".join(dict.fromkeys(problemas)))
+    if trivias_club:
+        (OUT / "data" / "trivias.json").write_text(json.dumps(trivias_club, ensure_ascii=False, separators=(",", ":")))
     (OUT / "data" / "novedades.json").write_text(json.dumps(novedades, ensure_ascii=False, separators=(",", ":")))
     (OUT / "data" / "players.json").write_text(json.dumps(players, ensure_ascii=False, separators=(",", ":")))
     print(f"{CFG['slug']}: sitio generado en {OUT.relative_to(ROOT)} — {len(players)} jugadores")

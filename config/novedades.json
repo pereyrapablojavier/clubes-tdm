@@ -1,5 +1,12 @@
 [
  {
+  "id": 10,
+  "fecha": "2026-11-28",
+  "icono": "🧠",
+  "titulo": "Nueva sección: Trivia",
+  "detalle": "En Mi Club > Trivia podés jugar y aprender: reglas del tenis de mesa y Reglamento TMT ProTour. Cada partida tiene 11 preguntas (verdadero o falso, números y palabras) y hay 11 versiones distintas de cada trivia: al volver a jugar cambian las preguntas. Al final ves tu puntaje y repasás lo que fallaste."
+ },
+ {
   "id": 9,
   "fecha": "2026-11-26",
   "icono": "📈",

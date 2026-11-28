@@ -406,3 +406,6 @@ a.triv-casilla:hover { border-color: var(--celeste); }
   :root:not([data-theme="light"]) .triv-est.oro, :root:not([data-theme="light"]) .insig.on b { background: #3A2F12; color: #F0D78A; }
   :root:not([data-theme="light"]) .pel-mal { background: repeating-linear-gradient(45deg, #3A1616 0 3px, #5A2323 3px 6px); }
 }
+
+/* iconos del menú Mi Club */
+.nav-ddm a .ico { display: inline-block; width: 1.7em; text-align: center; margin-right: 2px; }

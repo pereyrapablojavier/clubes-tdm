@@ -369,3 +369,6 @@ details.circ .fecha span { font-size: 10px; letter-spacing: .5px; }
   :root:not([data-theme="light"]) .triv-op.mal, :root:not([data-theme="light"]) .triv-fb.mal { background: #3A1616; color: #F2A3A3; }
 }
 @media (max-width: 420px) { .triv-ops.vf { grid-template-columns: 1fr; } .triv-texto { font-size: 18px; } }
+.triv-dots { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 10px 0 6px; }
+.triv-dots span { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; font-weight: 700; font-size: 14px; color: #fff; }
+.triv-dots .ok { background: var(--ok); } .triv-dots .mal { background: var(--mal); }
